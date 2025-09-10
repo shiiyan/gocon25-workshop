@@ -17,4 +17,10 @@ status: Published
 go install github.com/go-delve/delve/cmd/dlv@latest
 ```
 
+インストール後にバージョンを確認してみましょう。
+
+```bash
+dlv version
+```
+
 ## Delve を使ってみよう
