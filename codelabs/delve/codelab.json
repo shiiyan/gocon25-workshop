@@ -3,12 +3,12 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2025-09-10T13:11:23+09:00",
-  "id": "codelabs",
+  "updated": "2025-09-10T13:21:37+09:00",
+  "id": "delve",
   "duration": 0,
   "title": "Delve 入門",
   "summary": "Delve 入門",
-  "source": "delve.md",
+  "source": "./delve/delve.md",
   "theme": "",
   "status": [
     "published"
@@ -20,5 +20,5 @@
   "tags": [
     "web"
   ],
-  "url": "codelabs"
+  "url": "delve"
 }
