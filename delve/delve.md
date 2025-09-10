@@ -1,6 +1,6 @@
 author: Yuki Ito
 summary: Delve 入門
-id: codelabs
+id: delve
 categories: codelab,markdown
 environments: Web
 status: Published
