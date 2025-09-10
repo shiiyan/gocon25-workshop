@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2025-09-10T13:11:23+09:00",
+  "id": "codelabs",
+  "duration": 0,
+  "title": "Delve 入門",
+  "summary": "Delve 入門",
+  "source": "delve.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "codelab",
+    "markdown"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "codelabs"
+}
