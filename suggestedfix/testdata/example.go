@@ -1,0 +1,45 @@
+package testdata
+
+func example1(x any) any { // want "interface{} can be replaced with any" "interface{} can be replaced with any"
+	return x
+}
+
+func example2(x any) any {
+	return x
+}
+
+type MyStruct struct {
+	Field1 any // want "interface{} can be replaced with any"
+	Field2 any
+}
+
+var globalVar any = "hello" // want "interface{} can be replaced with any"
+
+func example3() {
+	var local any = 42 // want "interface{} can be replaced with any"
+	_ = local
+}
+
+type GenericType[T any] struct {
+	Value T
+}
+
+type OldGenericType[T any] struct { // want "interface{} can be replaced with any"
+	Value T
+}
+
+func example4(items []any) { // want "interface{} can be replaced with any"
+	for _, item := range items {
+		_ = item
+	}
+}
+
+func example5() map[string]any { // want "interface{} can be replaced with any"
+	return map[string]any{ // want "interface{} can be replaced with any"
+		"key": "value",
+	}
+}
+
+func example6(ch chan any) { // want "interface{} can be replaced with any"
+	ch <- "test"
+}
