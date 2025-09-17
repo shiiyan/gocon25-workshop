@@ -23,7 +23,7 @@ func run(pass *analysis.Pass) (any, error) {
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		pass.Report(analysis.Diagnostic{
 			Pos:     n.Pos(),
-			Message: "interface found",
+			Message: "interface{} found",
 		})
 	})
 

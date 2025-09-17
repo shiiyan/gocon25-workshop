@@ -31,7 +31,7 @@ func run(pass *analysis.Pass) (any, error) {
 		pass.Report(analysis.Diagnostic{
 			Pos:     iface.Pos(),
 			End:     iface.End(),
-			Message: "interface{} can be replaced with any",
+			Message: "interface{} found",
 		})
 	})
 
