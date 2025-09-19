@@ -15,6 +15,8 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
+const message = "interface{} can be replaced with any"
+
 func run(pass *analysis.Pass) (any, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
@@ -35,7 +37,7 @@ func run(pass *analysis.Pass) (any, error) {
 			pass.Report(analysis.Diagnostic{
 				Pos:     pos,
 				End:     end,
-				Message: "interface{} can be replaced with any",
+				Message: message,
 				SuggestedFixes: []analysis.SuggestedFix{
 					{
 						Message: "Replace interface{} with any",
