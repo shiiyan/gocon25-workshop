@@ -1,45 +1,47 @@
 package a
 
-func example1(x any) any { // want "interface{} can be replaced with any" "interface{} can be replaced with any"
-	return x
+// Empty interface declarations should trigger diagnostics.
+type Empty any // want "interface{} can be replaced with any"
+
+type EmptyAlias = any // want "interface{} can be replaced with any"
+
+// Non-empty interfaces (with methods or embedded interfaces) should be ignored.
+type NonEmpty interface {
+	Method()
 }
 
-func example2(x any) any {
-	return x
+type Embedded interface {
+	error
 }
 
-type MyStruct struct {
-	Field1 any // want "interface{} can be replaced with any"
-	Field2 any
+func AcceptEmpty(x any) { // want "interface{} can be replaced with any"
+	_ = x
 }
 
-var globalVar any = "hello" // want "interface{} can be replaced with any"
-
-func example3() {
-	var local any = 42 // want "interface{} can be replaced with any"
-	_ = local
+func AcceptNonEmpty(x interface{ Close() error }) {
+	_ = x
 }
 
-type GenericType[T any] struct {
-	Value T
-}
+var Value any = struct{}{} // want "interface{} can be replaced with any"
 
-type OldGenericType[T any] struct { // want "interface{} can be replaced with any"
-	Value T
-}
+var NonEmptyValue interface{ Read([]byte) (int, error) } = nil
 
-func example4(items []any) { // want "interface{} can be replaced with any"
-	for _, item := range items {
-		_ = item
+// Type block with both empty and non-empty interfaces.
+type (
+	AnotherEmpty    any // want "interface{} can be replaced with any"
+	AnotherNonEmpty interface {
+		Write([]byte) (int, error)
 	}
+)
+
+func AcceptMap(m map[any]string) { // want "interface{} can be replaced with any"
+	_ = m
 }
 
-func example5() map[string]any { // want "interface{} can be replaced with any"
-	return map[string]any{ // want "interface{} can be replaced with any"
-		"key": "value",
-	}
+type Wrapper[T any] struct { // want "interface{} can be replaced with any"
+	value T
 }
 
-func example6(ch chan any) { // want "interface{} can be replaced with any"
-	ch <- "test"
+func AcceptGeneric[T any](v T) { // want "interface{} can be replaced with any"
+	_ = v
 }

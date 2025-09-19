@@ -1,45 +1,35 @@
 package a
 
-func example1(x interface{}) interface{} { // want "interface{} can be replaced with any" "interface{} can be replaced with any"
-	return x
+// Empty interface declarations should trigger diagnostics.
+type Empty interface{} // want "interface{} can be replaced with any"
+
+type EmptyAlias = interface{} // want "interface{} can be replaced with any"
+
+// Non-empty interfaces (with methods or embedded interfaces) should be ignored.
+type NonEmpty interface {
+	Method()
 }
 
-func example2(x any) any {
-	return x
+type Embedded interface {
+	error
 }
 
-type MyStruct struct {
-	Field1 interface{} // want "interface{} can be replaced with any"
-	Field2 any
+func AcceptEmpty(x interface{}) { // want "interface{} can be replaced with any"
+	_ = x
 }
 
-var globalVar interface{} = "hello" // want "interface{} can be replaced with any"
-
-func example3() {
-	var local interface{} = 42 // want "interface{} can be replaced with any"
-	_ = local
+func AcceptNonEmpty(x interface{ Close() error }) {
+	_ = x
 }
 
-type GenericType[T any] struct {
-	Value T
-}
+var Value interface{} = struct{}{} // want "interface{} can be replaced with any"
 
-type OldGenericType[T interface{}] struct { // want "interface{} can be replaced with any"
-	Value T
-}
+var NonEmptyValue interface{ Read([]byte) (int, error) } = nil
 
-func example4(items []interface{}) { // want "interface{} can be replaced with any"
-	for _, item := range items {
-		_ = item
+// Type block with both empty and non-empty interfaces.
+type (
+	AnotherEmpty    interface{} // want "interface{} can be replaced with any"
+	AnotherNonEmpty interface {
+		Write([]byte) (int, error)
 	}
-}
-
-func example5() map[string]interface{} { // want "interface{} can be replaced with any"
-	return map[string]interface{}{ // want "interface{} can be replaced with any"
-		"key": "value",
-	}
-}
-
-func example6(ch chan interface{}) { // want "interface{} can be replaced with any"
-	ch <- "test"
-}
+)
