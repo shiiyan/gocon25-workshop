@@ -1,11 +1,11 @@
 # Go Suggested Fix ツールの作成 Codelab
 
-このコードラボでは、`interface{}`を`any`に置き換える修正提案を提供するGo解析ツールを段階的に作成します。実践的な例を通じて、Go ASTの仕組みと静的解析ツールの開発方法を学習します。
+このコードラボでは、`interface{}`を`any`に置き換える修正提案を提供するGo解析ツールを段階的に作成します。実践的な例を通じて、[Go AST](https://pkg.go.dev/go/ast)の仕組みと静的解析ツールの開発方法を学習します。
 各ステップで `skeleton/stepX` のコードに手を加えたあと `solution/stepX` と比較し、なぜその実装になるのかを確認できるよう構成しています。
 
 ## 学習目標
 
-- Go AST と inspector を使用した効率的な型検査方法を理解する
+- [Go AST](https://pkg.go.dev/go/ast) と [inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector) を使用した効率的な型検査方法を理解する
 - 段階的なアナライザー開発のアプローチを習得する
 - SuggestedFix による自動修正機能の実装方法を学ぶ
 
@@ -17,6 +17,18 @@
 4. 期待どおりの診断や SuggestedFix が出るまで `go test ./skeleton/stepX/...` を繰り返し、挙動を検証します
 5. 完成形の考え方を整理するために、対応する `solution/stepX/analyzer.go` を読み、差分の理由を言語化します
 6. 行き詰まったら「ヒント」や参考資料で理解を補強し、再び skeleton に戻って実装をブラッシュアップします
+
+
+### 実装タスク
+
+`skeleton/stepX/analyzer.go` をテストが通るように修正してください：
+
+```bash
+cd suggestedfix/skeleton/stepX
+
+# テストを実行
+go test -v -count=1 .
+```
 
 ### 前提条件
 - Go 1.25 以降がインストールされていること
@@ -68,10 +80,10 @@ go get golang.org/x/tools/go/ast/inspector
 
 ---
 
-## Step 1: Inspector を使用したインターフェース型の検出
+## Step 1: [Inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector) を使用したインターフェース型の検出
 
 ### ゴール
-✅ `inspector` を使用して AST から `interface{}` 型リテラルを効率的に見つける
+✅ [`inspector`](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector) を使用して AST から `interface{}` 型リテラルを効率的に見つける
 
 ### 学習内容
 
@@ -81,7 +93,7 @@ go get golang.org/x/tools/go/ast/inspector
 
 #### Inspector とは
 
-`go/ast/inspector` パッケージは、AST を効率的に走査するための最適化されたツールです。analysis パッケージでは、`inspect.Analyzer` を通じて提供されます。
+[`go/ast/inspector`](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector) パッケージは、AST を効率的に走査するための最適化されたツールです。[analysis](https://pkg.go.dev/golang.org/x/tools/go/analysis) パッケージでは、[`inspect.Analyzer`](https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/inspect#Analyzer) を通じて提供されます。
 
 #### 内部動作の仕組み
 
@@ -123,7 +135,7 @@ nodeFilter := []ast.Node{
 - **ast.Inspect**: 全ノード（約100万個）を訪問 → 約500ms
 - **inspector.Preorder**: 対象ノード（約1000個）のみ訪問 → 約10ms
 
-つまり、特定の型のノードのみを処理したい場合、Inspector は50倍以上高速です。
+つまり、特定の型のノードのみを処理したい場合、[Inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector) は50倍以上高速です。
 
 ### AST の基礎知識
 
@@ -133,7 +145,7 @@ AST（Abstract Syntax Tree）は、ソースコードの構文構造を木構造
 
 #### Go における AST ノード
 
-Go の AST は `go/ast` パッケージで定義されており、すべてのノードは `ast.Node` インターフェースを実装しています：
+Go の AST は [`go/ast`](https://pkg.go.dev/go/ast) パッケージで定義されており、すべてのノードは [`ast.Node`](https://pkg.go.dev/go/ast#Node) インターフェースを実装しています：
 
 ```go
 type Node interface {
@@ -143,26 +155,26 @@ type Node interface {
 ```
 
 主要なノードタイプ：
-- **式（Expression）ノード**: `ast.Expr` を実装
-  - `*ast.Ident`: 識別子（変数名、型名など）
-  - `*ast.BasicLit`: リテラル（数値、文字列など）
-  - `*ast.CallExpr`: 関数呼び出し
-  - `*ast.InterfaceType`: インターフェース型
+- **式（Expression）ノード**: [`ast.Expr`](https://pkg.go.dev/go/ast#Expr) を実装
+  - [`*ast.Ident`](https://pkg.go.dev/go/ast#Ident): 識別子（変数名、型名など）
+  - [`*ast.BasicLit`](https://pkg.go.dev/go/ast#BasicLit): リテラル（数値、文字列など）
+  - [`*ast.CallExpr`](https://pkg.go.dev/go/ast#CallExpr): 関数呼び出し
+  - [`*ast.InterfaceType`](https://pkg.go.dev/go/ast#InterfaceType): インターフェース型
 
-- **文（Statement）ノード**: `ast.Stmt` を実装
-  - `*ast.AssignStmt`: 代入文
-  - `*ast.IfStmt`: if 文
-  - `*ast.ForStmt`: for 文
+- **文（Statement）ノード**: [`ast.Stmt`](https://pkg.go.dev/go/ast#Stmt) を実装
+  - [`*ast.AssignStmt`](https://pkg.go.dev/go/ast#AssignStmt): 代入文
+  - [`*ast.IfStmt`](https://pkg.go.dev/go/ast#IfStmt): if 文
+  - [`*ast.ForStmt`](https://pkg.go.dev/go/ast#ForStmt): for 文
 
-- **宣言（Declaration）ノード**: `ast.Decl` を実装
-  - `*ast.GenDecl`: 汎用宣言（var, const, type, import）
-  - `*ast.FuncDecl`: 関数宣言
+- **宣言（Declaration）ノード**: [`ast.Decl`](https://pkg.go.dev/go/ast#Decl) を実装
+  - [`*ast.GenDecl`](https://pkg.go.dev/go/ast#GenDecl): 汎用宣言（var, const, type, import）
+  - [`*ast.FuncDecl`](https://pkg.go.dev/go/ast#FuncDecl): 関数宣言
 
 #### AST の走査方法
 
 AST を走査する主な方法は3つあります：
 
-1. **ast.Inspect**: 再帰的にすべてのノードを訪問
+1. **[ast.Inspect](https://pkg.go.dev/go/ast#Inspect)**: 再帰的にすべてのノードを訪問
 ```go
 ast.Inspect(node, func(n ast.Node) bool {
     // すべてのノードに対して実行
@@ -170,7 +182,7 @@ ast.Inspect(node, func(n ast.Node) bool {
 })
 ```
 
-2. **ast.Walk**: Visitor パターンを使用
+2. **[ast.Walk](https://pkg.go.dev/go/ast#Walk)**: Visitor パターンを使用
 ```go
 type visitor struct{}
 func (v *visitor) Visit(n ast.Node) ast.Visitor {
@@ -180,7 +192,7 @@ func (v *visitor) Visit(n ast.Node) ast.Visitor {
 ast.Walk(&visitor{}, node)
 ```
 
-3. **inspector.Preorder/Postorder**: 効率的な型フィルタリング（後述）
+3. **[inspector.Preorder](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector.Preorder)/[inspector.Postorder](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector.Postorder)**: 効率的な型フィルタリング（後述）
 
 #### InterfaceType ノードの詳細
 
@@ -199,24 +211,9 @@ type Reader interface {     // メソッドを持つインターフェース
               └── List: []*ast.Field   // 各メソッド
 ```
 
-### 実装タスク
-
-`skeleton/step1/analyzer.go` を以下のように修正してください：
-
-1. **nodeFilter を作成**
-   - InterfaceType ノードのみを対象とするフィルタを定義
-   - 現在は空の配列になっているので、適切な型を追加する
-
-2. **Preorder で走査**
-   - inspector を使って効率的にノードを訪問
-   - 検出したインターフェース型の位置を報告
-
-3. **完成コードと照合して理解を深める**
-   - `solution/step1/analyzer.go` の同じ箇所を読み、抽象化の仕方やログ出力の違いを確認
-
 ### 実装で必要な知識
 
-#### analysis.Pass の役割
+#### [analysis.Pass](https://pkg.go.dev/golang.org/x/tools/go/analysis#Pass) の役割
 
 ```go
 type Pass struct {
@@ -229,65 +226,41 @@ type Pass struct {
 }
 ```
 
-`pass.ResultOf[inspect.Analyzer]` から Inspector インスタンスを取得できます。
+`pass.ResultOf[inspect.Analyzer]` から [Inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector) インスタンスを取得できます。
 
-#### token.Pos の概念
+#### [token.Pos](https://pkg.go.dev/go/token#Pos) の概念
 
-AST ノードの位置は `token.Pos` で表現されます：
+AST ノードの位置は [token.Pos](https://pkg.go.dev/go/token#Pos) で表現されます：
 - ファイル内のバイトオフセットを表す整数値
 - `pass.Fset` を使って実際のファイル位置に変換可能
 - `Pos()` はノードの開始位置、`End()` は終了位置
 
 #### 必要な修正箇所
 
-1. nodeFilter の設定（現在は空の配列）
+1. nodeFilter の設定
 2. Preorder コールバック内での診断報告
 
-### 実行して確認
-
-```bash
-# 修正前を実行（テストが失敗する）
-go test ./skeleton/step1/...
-
-# コードを修正する
-
-# 修正後を実行（interface型が検出される）
-go test ./skeleton/step1/...
-
-# テストが通ることを確認
-# PASS
-# ok      suggestedfix/skeleton/step1    0.XXXs
-
-# 参考解答のテストも確認
-go test ./solution/step1/...
-```
-
 ### ポイント
-- `inspector.Preorder` で特定の型のノードのみを効率的に走査
-- AST ノードの型（`*ast.InterfaceType`）を理解することが重要
+- [`inspector.Preorder`](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector.Preorder) で特定の型のノードのみを効率的に走査
+- AST ノードの型（[`*ast.InterfaceType`](https://pkg.go.dev/go/ast#InterfaceType)）を理解することが重要
 - `pass.Report` で検出結果を報告（Diagnostic 構造体を使用）
-
-### ✅ チェックリスト
-- [ ] nodeFilter に InterfaceType を指定した
-- [ ] Preorder を使って走査を実装した
-- [ ] interface 型を検出できることを確認した
-- [ ] inspector の利点を理解した
 
 ---
 
 ## Step 2: 空のインターフェースの判定
 
 ### ゴール
-✅ 検出したインターフェース型から、`interface{}` のみを特定して報告する
+✅ 検出したインターフェース型から、[`interface{}`](https://go.dev/ref/spec#Interface_types) のみを特定して報告する
 
 ### 学習内容
 
 すべてのインターフェース型を検出するだけでなく、メソッドを持たない空のインターフェース（`interface{}`）のみを特定する方法を学びます。
 
-### InterfaceType の詳細構造
+### `InterfaceType` の詳細構造
 
-#### InterfaceType struct の定義
+#### `InterfaceType` struct の定義
 
+[`InterfaceType`](https://pkg.go.dev/go/ast#InterfaceType) の構造：
 ```go
 type InterfaceType struct {
     Interface  token.Pos  // "interface" キーワードの位置
@@ -389,7 +362,7 @@ Step1では全てのインターフェース型を検出しましたが、Step2�
 
 #### 型アサーションの安全性
 
-Inspector を使用する場合、nodeFilter で指定した型のノードのみが渡されるため、型アサーションは常に成功します。しかし、防御的プログラミングとして `ok` パターンを使うことも可能です：
+[Inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector) を使用する場合、nodeFilter で指定した型のノードのみが渡されるため、型アサーションは常に成功します。しかし、防御的プログラミングとして `ok` パターンを使うことも可能です：
 
 ```go
 iface, ok := n.(*ast.InterfaceType)
@@ -426,23 +399,6 @@ type Writer interface {
 }
 ```
 
-### 実行して確認
-
-```bash
-# 修正前を実行（テストが失敗する）
-go test ./skeleton/step2/...
-
-# 修正後を実行（interface{}のみを検出してテストが通る）
-go test ./skeleton/step2/...
-
-# テストが通ることを確認
-# PASS
-# ok      suggestedfix/skeleton/step2    0.XXXs
-
-# 参考解答のテストも確認
-go test ./solution/step2/...
-```
-
 ### ポイント
 - AST ノードの構造（`Methods` フィールド）を理解する
 - 条件分岐により特定のパターンのみを検出
@@ -463,7 +419,7 @@ go test ./solution/step2/...
 
 ### 学習内容
 
-単なる警告だけでなく、具体的な修正方法を提供する SuggestedFix の実装方法を学びます。これにより、開発者は手動で修正する手間を省けます。
+単なる警告だけでなく、具体的な修正方法を提供する [SuggestedFix](https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix) の実装方法を学びます。これにより、開発者は手動で修正する手間を省けます。
 
 ### SuggestedFix の詳細な仕組み
 
@@ -493,7 +449,7 @@ type TextEdit struct {
 
 #### TextEdit の動作原理
 
-TextEdit は、ソースコードの特定範囲を新しいテキストで置換します：
+[TextEdit](https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit) は、ソースコードの特定範囲を新しいテキストで置換します：
 
 ```go
 // 元のコード: "interface{}"
@@ -564,11 +520,11 @@ pos := iface.Interface  // これも同じだが、Pos() メソッドを使う�
 
 Step2では空のインターフェースを検出できるようになりました。Step3では、これに自動修正機能を追加します。
 
-1. **SuggestedFix を作成**
-   - TextEdit で置換内容を定義（`interface{}` → `any`）
+1. **[SuggestedFix](https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix) を作成**
+   - [TextEdit](https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit) で置換内容を定義（[`interface{}`](https://go.dev/ref/spec#Interface_types) → [`any`](https://pkg.go.dev/builtin#any)）
    - 適切なメッセージを設定
 
-2. **Diagnostic に追加**
+2. **[Diagnostic](https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic) に追加**
    - SuggestedFixes フィールドに設定
    - 既存の診断メッセージはそのまま
 
@@ -577,7 +533,7 @@ Step2では空のインターフェースを検出できるようになりまし
 
 ### 実装で必要な知識
 
-#### Diagnostic と SuggestedFix の関係
+#### [Diagnostic](https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic) と [SuggestedFix](https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix) の関係
 
 Diagnostic は問題を報告し、SuggestedFix はその解決方法を提供します：
 
@@ -595,7 +551,7 @@ pass.Report(analysis.Diagnostic{
 #### 修正提案の構成要素
 
 1. **Message**: エディタの Quick Fix メニューに表示される説明
-2. **TextEdits**: 実際に適用される編集操作のリスト
+2. **[TextEdits](https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit)**: 実際に適用される編集操作のリスト
 
 #### 実装時の考慮事項
 
@@ -615,26 +571,9 @@ var data any
 func Process(v any) {}
 ```
 
-### 実行して確認
-
-```bash
-# 修正前を実行（テストが失敗する）
-go test ./skeleton/step3/...
-
-# 修正後を実行（SuggestedFix付きでテストが通る）
-go test ./skeleton/step3/...
-
-# テストが通ることを確認
-# PASS
-# ok      suggestedfix/skeleton/step3    0.XXXs
-
-# 参考解答のテストも確認
-go test ./solution/step3/...
-```
-
 ### analysistest の仕組み
 
-テストでは `analysistest` パッケージを使用しており、`testdata/src/a/a.go` のコメントで期待される診断を指定しています：
+テストでは [`analysistest`](https://pkg.go.dev/golang.org/x/tools/go/analysis/analysistest) パッケージを使用しており、`testdata/src/a/a.go` のコメントで期待される診断を指定しています：
 
 ```go
 func example1(x interface{}) interface{} { // want "interface{} can be replaced with any"
@@ -644,15 +583,18 @@ func example1(x interface{}) interface{} { // want "interface{} can be replaced 
 
 `// want` コメントがある行で、指定されたメッセージの診断が報告されることを検証します。
 
+更に analysistest.RunWithSuggestedFixes を使用することで、SuggestedFixes の適用もテストできます。
+golden ファイル（`a.go.golden`）に修正後のコードを保存し、テストで自動的に比較します。
+
 ### ポイント
-- TextEdit で具体的な編集内容を定義
-- SuggestedFix を Diagnostic に追加することが重要
+- [TextEdit](https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit) で具体的な編集内容を定義
+- [SuggestedFix](https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix) を [Diagnostic](https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic) に追加することが重要
 - エディタとの連携により開発効率が大幅に向上
 
 ### ✅ チェックリスト
-- [ ] SuggestedFix の作成を実装した
-- [ ] TextEdit で正しい位置と内容を指定した
-- [ ] Diagnostic に SuggestedFixes を追加した
+- [ ] [SuggestedFix](https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix) の作成を実装した
+- [ ] [TextEdit](https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit) で正しい位置と内容を指定した
+- [ ] [Diagnostic](https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic) に SuggestedFixes を追加した
 - [ ] 修正提案が機能することを理解した
 - [ ] 実行して動作を確認した
 
@@ -662,9 +604,9 @@ func example1(x interface{}) interface{} { // want "interface{} can be replaced 
 
 このコードラボで学んだこと：
 
-### 📚 Step 1: Inspector の活用
+### 📚 Step 1: [Inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector) の活用
 - AST の基本構造と走査方法
-- Inspector による効率的なノード検索
+- [Inspector](https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector) による効率的なノード検索
 - 特定の型のノードのみを対象とした処理
 
 ### 📚 Step 2: 条件による絞り込み
@@ -673,18 +615,9 @@ func example1(x interface{}) interface{} { // want "interface{} can be replaced 
 - より精度の高い診断の実装
 
 ### 📚 Step 3: 自動修正の提供
-- SuggestedFix による修正提案の仕組み
-- TextEdit を使った具体的な編集内容の定義
+- [SuggestedFix](https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix) による修正提案の仕組み
+- [TextEdit](https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit) を使った具体的な編集内容の定義
 - 開発効率を向上させる自動化ツールの作成
-
-各ステップでは以下の流れで学習を進めます：
-
-1. `skeleton/stepX/analyzer.go` のコードを修正
-2. `go test ./skeleton/stepX/...` でテストを実行し、実装を確認
-3. `solution/stepX/analyzer.go` を読んで実装の違いを確認
-4. なぜその実装になるのか、設計意図を理解
-
-テスト駆動開発（TDD）のアプローチにより、期待される動作を明確にしながら実装を進められます。
 
 ## 実践的な応用
 
@@ -715,12 +648,11 @@ func example1(x interface{}) interface{} { // want "interface{} can be replaced 
 3. **さらなる学習**
    - [golang.org/x/tools/go/analysis](https://pkg.go.dev/golang.org/x/tools/go/analysis) のドキュメントを読む
    - 実際のプロジェクトで独自のアナライザーを作成
-   - `singlechecker` と `multichecker` の違いを理解する
+   - [`singlechecker`](https://pkg.go.dev/golang.org/x/tools/go/analysis/singlechecker) と [`multichecker`](https://pkg.go.dev/golang.org/x/tools/go/analysis/multichecker) の違いを理解する
 
 ## 参考資料
 
-- [Go AST Visualizer](https://yuroyoro.github.io/goast-viewer/)
+- [Goで作る静的解析ツール開発入門](https://zenn.dev/hsaki/books/golang-static-analysis)
 - [go/analysis package documentation](https://pkg.go.dev/golang.org/x/tools/go/analysis)
 - [Writing a Go Analyzer](https://arslan.io/2019/06/13/using-go-analysis-to-write-a-custom-linter/)
 - [staticcheck source code](https://github.com/dominikh/go-tools) - 実践的な例として
-- [Goで作る静的解析ツール開発入門](https://zenn.dev/hsaki/books/golang-static-analysis)
