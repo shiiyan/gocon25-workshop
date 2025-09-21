@@ -29,20 +29,243 @@
                   feedback-link="">
     
       <google-codelab-step label="Delve とは" duration="0">
-        <p><a href="https://github.com/go-delve/delve" target="_blank">Delve</a> は Go 言語用のデバッガです。Delve を使うと、Go プログラムの実行を一時停止したり、変数の値を調べたり、ステップ実行したりすることができます。</p>
+        <p><a href="https://github.com/go-delve/delve" target="_blank">Delve</a> は Go 言語用のデバッガです。Delve を使うと、Go プログラムの実行を一時停止して変数の値を調べたり、プログラムをステップ実行したりすることができます。</p>
 
 
       </google-codelab-step>
     
       <google-codelab-step label="Delve をインストールしよう" duration="0">
-        <pre><code language="language-bash" class="language-bash">go install github.com/go-delve/delve/cmd/dlv@latest
+        <pre><code language="language-bash" class="language-bash">&gt; go install github.com/go-delve/delve/cmd/dlv@latest
 </code></pre>
+<p>インストール後にバージョンを確認してみましょう。</p>
+<pre><code language="language-bash" class="language-bash">&gt; dlv version
+</code></pre>
+<p>本ワークショップで使う Delve のバージョンは <code>1.25.2</code> 以降となります。</p>
 
 
       </google-codelab-step>
     
       <google-codelab-step label="Delve を使ってみよう" duration="0">
-        
+        <p>まずは、簡単な Go プログラムをデバッグしてみましょう。</p>
+<p>下記のコマンドでこのリポジトリに含まれるプログラムを実行してみてください。</p>
+<pre><code language="language-bash" class="language-bash">&gt; go run ./delve/example/calc
+</code></pre>
+<p>このプログラムは、2 つの整数値、x=2・y=3 をプログラム内で定義して、それぞれの値を 2 倍して足した結果を出力します。 出力結果は以下のようになります。</p>
+<pre><code language="language-text" class="language-text">13
+</code></pre>
+<p>おや...？計算結果はプログラムが出力している <code>13</code> ではなく <code>(2 * 2) + (3 * 2) = 10</code> のはずです。プログラムにバグがあるようです。</p>
+<p>このプログラムを Delve でデバッグしてみましょう。 下記のコマンドを実行してみてください。</p>
+<pre><code language="language-bash" class="language-bash">&gt; dlv debug ./delve/example/calc
+</code></pre>
+<p><code>dlv debug</code> コマンドは、指定した Go プログラムをコンパイルしてデバッグモードで実行します。 <code>dlv debug</code> コマンドでプログラムを実行すると、<code>(dlv)</code> というプロンプトが表示され、デバッグを行うための Delve のコマンドを入力できるようになります。</p>
+<pre><code language="language-text" class="language-text">Type &#39;help&#39; for list of commands.
+(dlv)
+</code></pre>
+<p>プログラムの実行を任意の場所で一時停止するために、下記のように <code>break</code> コマンドでブレークポイントを設定してみましょう。</p>
+<pre><code language="language-text" class="language-text">(dlv) break ./delve/example/calc/main.go:6
+</code></pre>
+<p>Delve の <code>break</code> コマンドはプログラムにブレークポイント（デバッグ中にプログラムを一時停止させたい位置）を設定するコマンドで、上記の例では <code>./delve/example/calc/main.go</code> の 6 行目にブレークポイントを設定しています（<code>break</code> コマンドは短縮した <code>b</code> でも実行できます）。</p>
+<p>ブレークポイントを設定したら、下記のように <code>continue</code> コマンドでプログラムの実行を開始してみましょう。</p>
+<pre><code language="language-text" class="language-text">(dlv) continue
+&gt; [Breakpoint 1] main.main() ./delve/example/calc/main.go:6 (hits goroutine(1):1 total:1) (PC: ...)
+     1: package main
+     2:
+     3: func main() {
+     4:         var x, y int
+     5:
+=&gt;   6:         x = 2
+     7:         y = 3
+     8:
+     9:         answer := calc(x, y)
+    10:
+    11:         println(answer)
+</code></pre>
+<p><code>continue</code> コマンドはプログラムの実行を開始するコマンドです（<code>continue</code> コマンドは短縮した <code>c</code> でも実行できます）。continue コマンドを実行すると、プログラムは最初のブレークポイントまで実行され、一時停止します。 上記の例では、先程設定したブレークポイントでプログラムが一時停止し、現在の実行位置が <code>./delve/example/calc/main.go</code> の 6 行目であることが表示されています。</p>
+<p>このブレークポイントの位置では、変数 <code>x</code> に値 <code>2</code> を代入しているだけでバグではなさそうです。</p>
+<p>次の処理に進んでみましょう。下記のように <code>step</code> コマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) step
+&gt; main.main() ./delve/example/calc/main.go:7 (PC: ...)
+     2:
+     3: func main() {
+     4:         var x, y int
+     5:
+     6:         x = 2
+=&gt;   7:         y = 3
+     8:
+     9:         answer := calc(x, y)
+    10:
+    11:         println(answer)
+    12: }
+</code></pre>
+<p><code>step</code> コマンドは現在の行を実行して次の処理に進むコマンドです（<code>step</code> コマンドは短縮した <code>s</code> でも実行できます）。上記の例では、現在の実行位置が <code>./delve/example/calc/main.go</code> の 7 行目に進んでいることが表示されています。</p>
+<p>この行も変数 <code>y</code> に値 <code>3</code> を代入しているだけでバグではなさそうです。</p>
+<p>さらに次の行に進んでみましょう。再度 <code>step</code> コマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) step
+&gt; main.main() ./delve/example/calc/main.go:9 (PC: ...)
+     4:         var x, y int
+     5:
+     6:         x = 2
+     7:         y = 3
+     8:
+=&gt;   9:         answer := calc(x, y)
+    10:
+    11:         println(answer)
+    12: }
+    13:
+    14: func calc(x, y int) int {
+</code></pre>
+<p>この行では、<code>calc</code> 関数を呼び出して変数 <code>answer</code> に結果を代入しています。この <code>calc</code> 関数にバグがありそうです。</p>
+<p>さらに <code>step</code> コマンドを実行して <code>calc</code> 関数の中に入ってみましょう。</p>
+<pre><code language="language-text" class="language-text">(dlv) step
+&gt; main.calc() ./delve/example/calc/main.go:14 (PC: ...)
+     9:         answer := calc(x, y)
+    10:
+    11:         println(answer)
+    12: }
+    13:
+=&gt;  14: func calc(x, y int) int {
+    15:         a := x + x
+    16:         b := y * y
+    17:
+    18:         return a + b
+    19: }
+</code></pre>
+<p>処理が <code>calc</code> 関数の中に入り、現在の実行位置が <code>./delve/example/calc/main.go</code> の 14 行目であることが表示されています。</p>
+<p>この時点での引数 <code>x</code> と <code>y</code> の値を確認してみましょう。下記のように <code>print</code> コマンドで変数の値を表示してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) print x
+2
+(dlv) print y
+3
+</code></pre>
+<p><code>print</code> コマンドは指定した変数の値を表示するコマンドです（<code>print</code> コマンドは短縮した <code>p</code> でも実行できます）。上記の例では、引数 <code>x</code> の値が <code>2</code>、引数 <code>y</code> の値が <code>3</code> であることが表示されています。</p>
+<p>それでは、<code>calc</code> 関数の中をさらにステップ実行してみましょう。<code>step</code> コマンドを 2 回実行してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) step
+&gt; main.calc() ./delve/example/calc/main.go:15 (PC: ...)
+    10:
+    11:         println(answer)
+    12: }
+    13:
+    14: func calc(x, y int) int {
+=&gt;  15:         a := x + x
+    16:         b := y * y
+    17:
+    18:         return a + b
+    19: }
+
+(dlv) step
+&gt; main.calc() ./delve/example/calc/main.go:16 (PC: ...)
+    11:         println(answer)
+    12: }
+    13:
+    14: func calc(x, y int) int {
+    15:         a := x + x
+=&gt;  16:         b := y * y
+    17:
+    18:         return a + b
+    19: }
+</code></pre>
+<p>変数 <code>a</code> への代入が実行されたので、変数 <code>a</code> の値を確認してみましょう。再度 <code>print</code> コマンドで変数 <code>a</code> の値を表示してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) print a
+4
+</code></pre>
+<p>変数 <code>a</code> の値が <code>4</code> であることが表示されました。x=2 の 2 倍は 4 なので、ここまでは正しい計算が行われています。</p>
+<p>それでは、次に変数 <code>b</code> への代入を実行してみましょう。再度 <code>step</code> コマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) step
+&gt; main.calc() ./delve/example/calc/main.go:18 (PC: ...)
+    13:
+    14: func calc(x, y int) int {
+    15:         a := x + x
+    16:         b := y * y
+    17:
+=&gt;  18:         return a + b
+</code></pre>
+<p>変数 <code>b</code> への代入が実行され、現在の実行位置が <code>./delve/example/calc/main.go</code> の 18 行目に進んでいることが表示されています。</p>
+<p>それでは、変数 <code>b</code> の値を確認してみましょう。再度 <code>print</code> コマンドで変数 <code>b</code> の値を表示してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) print b
+9
+</code></pre>
+<p>変数 <code>b</code> の値が <code>9</code> であることが表示されました。y=3 の 2 倍は 6 なので、ここでバグが発生していることがわかります。</p>
+<p>現在の実行位置のソースコードを再表示するために、<code>list</code> コマンドを実行してみましょう。</p>
+<pre><code language="language-text" class="language-text">(dlv) list
+&gt; main.calc() ./delve/example/calc/main.go:18 (PC: 0x477b0c)
+    13:
+    14: func calc(x, y int) int {
+    15:         a := x + x
+    16:         b := y * y
+    17:
+=&gt;  18:         return a + b
+    19: }
+</code></pre>
+<p><code>list</code> コマンドは現在の実行位置のソースコードを表示するコマンドです（<code>list</code> コマンドは短縮した <code>l</code> でも実行できます）。上記の例では、現在の実行位置が <code>./delve/example/calc/main.go</code> の 18 行目であることが表示されています。</p>
+<p>ここで、変数 <code>b</code> の値を計算している 16 行目のソースコードを確認してみると、計算式が <code>y * y</code> となっており、y の 2 乗を計算していることがわかります。正しくは y の 2 倍を計算するために <code>y + y</code> とする必要があり、この部分がバグであることがわかりました！</p>
+<p>最後に、デバッグが完了したので Delve を終了しましょう。<code>quit</code> コマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">(dlv) quit
+</code></pre>
+<p><code>quit</code> コマンドを実行すると、Delve が終了します（<code>quit</code> コマンドは短縮した <code>q</code> でも実行できます）。</p>
+<p>このように、Delve デバッガを使うと Go プログラムの実行を一時停止して変数の値を調べたり、プログラムをステップ実行したりすることができるので、プログラムのバグの特定に役立ちます。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="テストでの Delve の利用" duration="0">
+        <p>先ほどの例では、Delve を使って main 関数からはじまるプログラム全体のデバッグを行いましたが、実践的には main 関数を持たないライブラリのデバッグを行いたい場合も多いでしょう。</p>
+<p>そのような場合は、テストコードでライブラリの機能を呼び出して、テスト経由で Delve を利用する方法が便利です。</p>
+<p>前のステップでデバッグしていた <code>calc</code> 関数のためのテストコードは <code>./delve/example/calc/calc_test.go</code> に以下のように実装されています。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import &#34;testing&#34;
+
+func TestCalc(t *testing.T) {
+	t.Parallel()
+
+	want := 10
+	got := calc(2, 3)
+
+	if got != want {
+		t.Errorf(&#34;got %d, want %d&#34;, got, want)
+	}
+}
+</code></pre>
+<p>このテストコードを利用して <code>calc</code> 関数をデバッグしてみましょう。下記の コマンドを実行してみてください。</p>
+<pre><code language="language-bash" class="language-bash">&gt; dlv test ./delve/example/calc
+Type &#39;help&#39; for list of commands.                                                                                                                                                                                 (dlv)
+</code></pre>
+<p>前のステップで利用した <code>dlv debug</code> コマンドと同じように、<code>dlv test</code> コマンドは指定したパッケージのテストに対してデバッガを起動します。</p>
+<p>デバッガが起動されたあとは、前のステップと同じように Delve の各種コマンドを利用してデバッグを行うことができます。</p>
+<pre><code>(dlv) break ./delve/example/calc/main.go:15
+Breakpoint 1 set at 0x5a7ada for github.com/newmo-oss/gocon25-workshop/delve/example/calc.calc() ./delve/example/calc/main.go:15
+
+(dlv) c
+&gt; [Breakpoint 1] github.com/newmo-oss/gocon25-workshop/delve/example/calc.calc() ./delve/example/calc/main.go:15 (hits goroutine(21):1 total:1) (PC: ...)
+    10:
+    11:         println(answer)
+    12: }
+    13:
+    14: func calc(x, y int) int {
+=&gt;  15:         a := x + x
+    16:         b := y * y
+    17:
+    18:         return a + b
+    19: }
+
+(dlv) p x
+2
+</code></pre>
+<p>また、<code>dlv test</code> コマンドでは <code>--</code> を指定して Go のテスト（<code>go test</code>）に渡すオプションを指定することもできます。</p>
+<p>実践的には、テストとデバッグの実行時間を短くするために、特定のテスト関数だけを実行したい場合が多いでしょう。そのような場合、下記のように <code>--</code> を利用して <code>-test.run</code> オプションで実行したいテスト関数を指定することができます。</p>
+<pre><code language="language-bash" class="language-bash">&gt; dlv test ./delve/example/calc -- -test.run TestCalc
+</code></pre>
+<p>このように、<code>dlv test</code> コマンドを利用すると、main 関数を経由することなくテストを用いて Go のプログラムをデバッグすることができます。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="0">
+        <p>本ワークショップでは、Go 言語用のデバッガである Delve のインストール方法と基本的な使い方について学びました。</p>
+<p>Delve デバッガを利用すると、Go のプログラムをステップ実行したり、実行中の変数の値を調べたりすることができるので、プログラムのバグをより素早く特定できるようになります。</p>
+<p>特に、 <code>dlv test</code> コマンドは特定の関数やメソッドをテストを通じてデバッグすることができるので、実践的な Go の開発において非常に役立ちます。</p>
+<p>Delve は今回紹介したもの以外にも多くの便利な機能を持っています。ぜひ<a href="https://github.com/go-delve/delve/tree/master/Documentation" target="_blank">公式のドキュメント</a>や <code>help</code> コマンドを参照して、Delve のさらなる活用方法を学んでみてください！</p>
+
 
       </google-codelab-step>
     
