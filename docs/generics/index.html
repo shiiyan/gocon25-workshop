@@ -1,0 +1,280 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Go ジェネリクス Codelab</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="generics"
+                  title="Go ジェネリクス Codelab"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="学習目標" duration="0">
+        <ul>
+<li>型パラメータを使った型安全なコードの実装方法を理解する</li>
+<li>Interface を型制約として活用する方法を学ぶ</li>
+<li>複雑な型制約のパターンを習得する</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="📋 進め方" duration="0">
+        <ol type="1">
+<li>各ステップの「学習内容」を読み、概念を理解します</li>
+<li><code>skeleton/stepX/main.go</code> を編集して実装します</li>
+<li>仕上げに <code>solution/stepX/main.go</code> と比較して理解を深めます</li>
+</ol>
+<h2 is-upgraded>前提条件</h2>
+<ul>
+<li>Go 1.18 以降（Go 1.20以降を推奨）</li>
+<li>基本的な Go の文法の理解</li>
+</ul>
+<h2 is-upgraded>実行して確認</h2>
+<p>各ステップのコードを修正したら、以下のコマンドで動作を確認してください。</p>
+<pre><code language="language-bash" class="language-bash">go run skeleton/stepX/main.go
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: ジェネリクスの基礎 - 型パラメータによる抽象化" duration="0">
+        <h2 is-upgraded>🎯 このステップで学ぶこと</h2>
+<p><strong>型パラメータ</strong> という新しい概念を理解し、同一のロジックを複数の型で再利用する方法を学びます。</p>
+<h2 is-upgraded>📚 なぜジェネリクスが必要か？</h2>
+<p>Go 1.18以前は、複数の型に対して同じ処理を書く場合、以下のような選択肢しかありませんでした。</p>
+<ol type="1">
+<li><strong>型ごとに関数を複製する</strong>（コードの重複）</li>
+<li><strong><code>interface{}</code></strong><strong>（現在の</strong><strong><code>any</code></strong><strong>）を使う</strong>（型安全性の喪失）</li>
+</ol>
+<p>現在の <code>skeleton/step1/main.go</code> は <code>any</code> を使った実装例です。この方法には以下の問題があります。</p>
+<pre><code language="language-go" class="language-go">// 問題1: 型情報が失われる
+func (s Slice) Filter(f func(any) bool) Slice  // any型として扱う
+
+// 問題2: 使う側で型アサーションが必要
+evens := ints.Filter(func(i any) bool {
+    return (i.(int))%2 == 0  // .(int) で型アサーション
+})
+
+// 問題3: 実行時にパニックのリスク
+// もし間違った型でアクセスしたら実行時エラー
+</code></pre>
+<h2 is-upgraded>🔑 型パラメータの概念</h2>
+<p>型パラメータは「型を後から決める」仕組みです。</p>
+<pre><code language="language-go" class="language-go">// [T any] が型パラメータ
+// T は「何かの型」を表すプレースホルダー
+type Slice[T any] []T
+
+// 使うときに具体的な型を指定
+var ints Slice[int]       // T = int
+var strings Slice[string] // T = string
+</code></pre>
+<p><strong>重要な概念</strong></p>
+<ul>
+<li><code>T</code> は型変数（Type Variable）と呼ばれる</li>
+<li><code>any</code> は型制約（Type Constraint）— この場合「どんな型でもOK」</li>
+<li>型パラメータは関数にも使える：<code>func Map[A, B any](...)</code></li>
+</ul>
+<h2 is-upgraded>💡 型推論（Type Inference）</h2>
+<p>Go のコンパイラは多くの場合、型パラメータを自動で推論できます。</p>
+<pre><code language="language-go" class="language-go">// 明示的に型を指定
+ints := Slice[int]{1, 2, 3}
+
+// 型推論により省略可能
+ints := Slice{1, 2, 3}  // 要素から int と推論
+</code></pre>
+<h2 is-upgraded>🛠 実装タスク</h2>
+<p>このステップの内容を踏まえて、<code>skeleton/step1/main.go</code> をジェネリクスを用いて修正してください。</p>
+<h2 is-upgraded>✅ 理解度チェック</h2>
+<ul>
+<li>[ ] 型パラメータが「型のプレースホルダー」であることを理解した</li>
+<li>[ ] 型アサーションが不要になる理由を説明できる</li>
+<li>[ ] コンパイル時型チェックの利点を理解した</li>
+<li>[ ] 複数の型パラメータ（Map関数のA, B）の使い方を理解した</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: Interface を型制約として使う" duration="0">
+        <h2 is-upgraded>🎯 このステップで学ぶこと</h2>
+<p>Interface を<strong>型制約</strong>として使用し、型パラメータに「条件」を付ける方法を学びます。</p>
+<h2 is-upgraded>📚 型制約の必要性</h2>
+<p>Step 1 では <code>any</code> を使いましたが、これは「どんな型でもOK」という意味です。しかし、実際のコードでは「特定のメソッドを持つ型」という条件を付けたい場合があります。</p>
+<pre><code language="language-go" class="language-go">// 現在の問題：T は any なので String() メソッドが保証されない
+type Container[T any] struct {
+    items []T
+}
+
+func (c *Container[T]) PrintAll() {
+    for _, item := range c.items {
+        fmt.Println(item.String())  // ❌ コンパイルエラー！
+    }
+}
+</code></pre>
+<h2 is-upgraded>🔑 Interface による型制約</h2>
+<p>Interface を型制約として使うことで、「この条件を満たす型のみ」を指定できます。</p>
+<pre><code language="language-go" class="language-go">// T は fmt.Stringer を実装した型のみ
+type Container[T fmt.Stringer] struct {
+    items []T
+}
+</code></pre>
+<h2 is-upgraded>💭 通常の Interface 使用との違い</h2>
+<p><strong>重要な違い：型の統一性</strong></p>
+<pre><code language="language-go" class="language-go">// 従来の方法：異なる型を混在できる
+func PrintAll(items []fmt.Stringer) {
+    // items = []fmt.Stringer{Person{}, Product{}} // 異なる型OK
+}
+
+// ジェネリクスの型制約：同一の型で統一
+type Container[T fmt.Stringer] struct {
+    items []T  // すべて同じ具体的な型T
+}
+// Container[Person] と Container[Product] は別の型
+</code></pre>
+<p><strong>型制約のメリット</strong></p>
+<ol type="1">
+<li><strong>型の一貫性</strong> — コンテナ内の全要素が同じ型</li>
+<li><strong>パフォーマンス</strong> — interface のボックス化が不要な場合がある</li>
+<li><strong>型情報の保持</strong> — 元の型の情報が失われない</li>
+</ol>
+<h2 is-upgraded>🤔 なぜ型制約が有用か？</h2>
+<pre><code language="language-go" class="language-go">// Interface を型制約として使うと...
+container := Container[Person]{}
+container.Add(Person{&#34;Alice&#34;, 30})  // ✅ OK
+container.Add(Product{&#34;Book&#34;, 10})  // ❌ コンパイルエラー（型が違う）
+
+// 通常の interface 引数だと...
+items := []fmt.Stringer{}
+items = append(items, Person{&#34;Alice&#34;, 30})  // ✅ OK
+items = append(items, Product{&#34;Book&#34;, 10})  // ✅ OK（混在可能）
+</code></pre>
+<h2 is-upgraded>🛠 実装タスク</h2>
+<p>このステップの内容を踏まえて、<code>skeleton/step2/main.go</code> を修正してください。</p>
+<h2 is-upgraded>✅ 理解度チェック</h2>
+<ul>
+<li>[ ] 型制約により特定のメソッドの存在を保証できることを理解した</li>
+<li>[ ] 型制約と通常の interface 引数の違いを説明できる</li>
+<li>[ ] 型の一貫性がなぜ重要かを理解した</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 3: 複雑な型制約 - Interface の合成" duration="0">
+        <h2 is-upgraded>🎯 このステップで学ぶこと</h2>
+<p>複数の制約を組み合わせた高度な型制約パターンを理解し、ポインタ専用の制約を正しく表現できるようになります。</p>
+<h2 is-upgraded>📚 Pointer 制約を正しく書く難しさ</h2>
+<p>JSON のアンマーシャル処理を汎用化したい場合、値そのもの (<code>T</code>) を返しつつ <code>*T</code> にだけ定義されたメソッドを呼び出さなければなりません。<code>json.Unmarshal</code> はポインタを受け取るため、型制約で「<code>*T</code> かつ <code>json.Unmarshaler</code>」を厳密に指定する必要があります。</p>
+<h2 is-upgraded>🔍 解決したい問題</h2>
+<pre><code language="language-go" class="language-go">var user User
+json.Unmarshal(data, &amp;user)  // ポインタが必須
+
+user, err := Unmarshal[User](data) // ジェネリクスで値型として受け取りたい
+</code></pre>
+<h2 is-upgraded>🔑 複合型制約（Type Set Intersection）</h2>
+<p>以下のように複数の型制約を同時に満たす型を指定します。</p>
+<pre><code language="language-go" class="language-go">type Unmershaller[T any] interface {
+    *T
+    json.Unmarshaler
+}
+</code></pre>
+<p>これは「<code>*T</code> <strong>かつ </strong><code>json.Unmarshaler</code> を実装した型」を意味します。</p>
+<h2 is-upgraded>💡 2つの型パラメータの連携</h2>
+<pre><code language="language-go" class="language-go">func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
+    var v T
+    err := PT(&amp;v).UnmarshalJSON(data)
+    return v, err
+}
+</code></pre>
+<ul>
+<li><code>T</code> : 呼び出し側へ返したい値型（例：<code>User</code>）</li>
+<li><code>PT</code>: <code>*T</code> と互換性があり、<code>json.Unmarshaler</code> を実装した型</li>
+</ul>
+<h2 is-upgraded>🚀 型推論の進化</h2>
+<p>Go 1.20 以降では <code>PT</code> を省略でき、<code>Unmarshal[User](data)</code> のようにシンプルに呼び出せます。コンパイラが <code>Unmershaller[User]</code> を満たす型として <code>*User</code> を推論します。</p>
+<h2 is-upgraded>🚨 現在の skeleton の問題</h2>
+<p><code>skeleton/step3/main.go</code> の <code>Unmershaller</code> は <code>json.Unmarshaler</code> しか制約として指定していません。そのため、コンパイラは <code>PT</code> と <code>*T</code> の関係を理解できず、以下のエラーが発生します：</p>
+<pre><code>cannot convert &amp;v (value of type *T) to type PT
+</code></pre>
+<h2 is-upgraded>🛠 実装タスク</h2>
+<p>このステップの内容を踏まえて、<code>skeleton/step3/main.go</code> を修正してください。</p>
+<h2 is-upgraded>✅ 理解度チェック</h2>
+<ul>
+<li>[ ] 複合型制約（<code>*T</code> かつ <code>json.Unmarshaler</code>）の意味を説明できる</li>
+<li>[ ] なぜ 2 つの型パラメータ（<code>T</code> と <code>PT</code>）が必要か理解している</li>
+<li>[ ] <code>PT(&v)</code> のキャストが必要な理由を説明できる</li>
+<li>[ ] 値型だけを許すとコンパイル エラーになることを把握している</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="0">
+        <h2 is-upgraded>🎓 学んだ概念</h2>
+<p><strong>Step 1: 型パラメータの基礎</strong></p>
+<ul>
+<li>型パラメータは「型のプレースホルダー」</li>
+<li>コンパイル時の型安全性を保ちながら汎用的なコードが書ける</li>
+<li>型推論により、多くの場合型指定を省略できる</li>
+</ul>
+<p><strong>Step 2: Interface による型制約</strong></p>
+<ul>
+<li>Interface を型制約として使い、型パラメータに条件を付けられる</li>
+<li>通常の interface 引数とは異なり、型の一貫性が保証される</li>
+<li>パフォーマンスと型安全性の両立が可能</li>
+</ul>
+<p><strong>Step 3: 複雑な型制約</strong></p>
+<ul>
+<li>複数の制約を組み合わせた複合型制約が定義できる</li>
+<li>複数の型パラメータを連携させて高度な抽象化が可能</li>
+<li>型推論の改善により、使いやすいAPIを提供できる</li>
+</ul>
+<h2 is-upgraded>🚀 次のステップ</h2>
+<ol type="1">
+<li>標準ライブラリのジェネリクス活用例を調べる（<code>slices</code>, <code>maps</code> パッケージなど）</li>
+<li>自分のプロジェクトでジェネリクスが活用できる箇所を探す</li>
+<li>より高度なパターン（型制約の再帰的定義など）を学習する</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="参考資料" duration="0">
+        <ul>
+<li><a href="https://www.youtube.com/watch?v=dab3I-HcTVk" target="_blank">YouTube: GopherCon 2024: Advanced Generics Patterns - Axel Wagner</a></li>
+<li><a href="https://github.com/gophercon/2024-talks/tree/main/AxelWagner-AdvancedGenericsPatterns" target="_blank">PDF: GopherCon 2024: Advanced Generics Patterns - Axel Wagner</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
