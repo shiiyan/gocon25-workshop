@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2025-09-23T06:46:01+09:00",
+  "id": "reflect",
+  "duration": 0,
+  "title": "reflect パッケージによるメタプログラミング Codelab",
+  "summary": "reflect パッケージによるメタプログラミング",
+  "source": "./reflect/index.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "codelab",
+    "markdown"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "reflect"
+}

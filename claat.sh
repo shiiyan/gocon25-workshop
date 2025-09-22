@@ -7,6 +7,7 @@ markdown_files=(
     "./suggestedfix/index.md"
     "./assembly/index.md"
     "./toolexec/index.md"
+    "./reflect/index.md"
 )
 
 # Loop through each Markdown file and process with claat

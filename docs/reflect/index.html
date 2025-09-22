@@ -1,0 +1,238 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>reflect パッケージによるメタプログラミング Codelab</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="reflect"
+                  title="reflect パッケージによるメタプログラミング Codelab"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="この Codelab について" duration="0">
+        <p>この Codelab では、Goの標準ライブラリのひとつである <code>reflect</code> パッケージを学びます。</p>
+<p>以下のゴールを達成して、Goでメタプログラミングができるようになりましょう！</p>
+<ul>
+<li>reflect パッケージとは何かを理解する</li>
+<li>reflect の基本的な使い方を理解する</li>
+<li>reflect を使って、任意の型の struct をコピーする</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="reflect パッケージとは何かを理解する" duration="0">
+        <p><a href="https://pkg.go.dev/reflect" target="_blank">reflect</a> パッケージは、Goの標準ライブラリのひとつです。 reflect パッケージを使うと、プログラムは、自身を鏡に反射（reflection）するように、ランタイムの型や値を見ることができるようになります。</p>
+<p>そして、型や値を見るだけだなく、ランタイムでそれらを変更することができます。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="基本的な使い方: 型の情報を取得する" duration="0">
+        <p>ランタイムの型の情報を取得するには <a href="https://pkg.go.dev/reflect#TypeOf" target="_blank"><code>reflect.TypeOf()</code></a>を使用します。</p>
+<p>取得できる型情報は <a href="https://pkg.go.dev/reflect#Type" target="_blank"><code>Type</code> interface</a> を実装しています。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import (
+	&#34;fmt&#34;
+	&#34;reflect&#34;
+)
+
+type person struct {
+	name string
+}
+
+func main() {
+	p := person{
+		name: &#34;にゅも太郎&#34;,
+	}
+
+	t := reflect.TypeOf(p)
+
+	fmt.Println(t.Name()) // person
+}
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="基本的な使い方: 値の情報を取得する" duration="0">
+        <p>ランタイムの値の情報を取得するには <a href="https://pkg.go.dev/reflect#ValueOf" target="_blank"><code>reflect.ValueOf()</code></a>を使用します。</p>
+<p>取得できる値の情報は <a href="https://pkg.go.dev/reflect#Value" target="_blank"><code>Value</code> struct</a> を実装しています。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import (
+	&#34;fmt&#34;
+	&#34;reflect&#34;
+)
+
+type person struct {
+	name string
+}
+
+func main() {
+	p := &amp;person{
+		name: &#34;にゅも太郎&#34;,
+	}
+
+	v := reflect.ValueOf(p)
+
+	fmt.Println(v.Elem()) // {にゅも太郎}
+}
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="問題: 値のコピー（１）" duration="0">
+        <p>ある struct A を、別の struct Bにコピーすることを考えます。 もっともシンプルな方法は、すべてのフィールドに対して代入をおこなうことです。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import (
+	&#34;fmt&#34;
+)
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+func main() {
+	p1 := Person{Name: &#34;Alice&#34;, Age: 20}
+	p2 := Person{}
+
+	copyPerson(&amp;p1, &amp;p2)
+
+	fmt.Println(p2) // {Alice 20}
+}
+
+func copyPerson(src, dst *Person) {
+	dst.Name = src.Name
+	dst.Age = src.Age
+}
+</code></pre>
+<p>この方法には、以下のような問題があります。</p>
+<ul>
+<li><code>Person</code> のフィールドが増えると <code>copyPerson</code> のコードを変更する必要がある</li>
+<li>型ごとにコピー関数を用意する必要がある</li>
+</ul>
+<p>reflect パッケージを使ってこの問題を解決してみましょう。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="問題: 値のコピー（２）" duration="0">
+        <p>任意の型の struct をコピーできる <code>copyStruct</code> 関数を実装してみましょう。 雛形のコードはこちらです。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import (
+	&#34;fmt&#34;
+	&#34;uuid&#34;
+)
+
+type Person struct {
+	Name string
+	DNA string
+	Soul uuid `copyable:&#34;false&#34;`
+}
+
+type Food struct {
+	Name string
+	Kind string
+	secretIngredient string
+}
+
+func main() {
+	p1 := Person{Name: &#34;Alice&#34;, DNA: &#34;ALICE_DNA&#34;, Soul: uuid.New()}
+	p2 := Person{}
+	f1 := Food{Name: &#34;Icecream&#34;, Kind: &#34;Sweet&#34;, secretIngredient: &#34;Salt&#34;}
+	f2 := Food{}
+
+	copyStruct(&amp;p1, &amp;p2)
+	copyStruct(&amp;f1, &amp;f2)
+
+	fmt.Println(p2) // {Alice 20}
+	fmt.Println(f2) // {Icecream Sweet}
+}
+
+// TODO: implement
+func copyStruct() {}
+</code></pre>
+<h2 is-upgraded>考え方</h2>
+<ul>
+<li>任意の型を引数で受け取れるようにします <ul>
+<li><code>interface{}</code> を使いましょう</li>
+</ul>
+</li>
+<li>引数の値情報から、値そのものを取り出します <ul>
+<li><code>reflect.ValueOf()</code> を使いましょう</li>
+<li>ポインター型の値情報から値を取り出すには <code>Value.Elem()</code> を使います</li>
+</ul>
+</li>
+<li>引数の struct のフィールドを反復して処理します <ul>
+<li><code>Value.NumField()</code> を使うと、フィールドの数を取得できます</li>
+<li><code>Value.Filed(index)</code> を使うと、その <code>index</code> のフィールドを取得できます</li>
+</ul>
+</li>
+<li>フィールドが代入可能であるかをチェックします <ul>
+<li><code>Value.CanSet()</code> を使いましょう</li>
+</ul>
+</li>
+<li>フィールドに値を代入します <ul>
+<li><code>Value.Set(Value)</code> を使うと、値情報を別の値情報にマッピングできます</li>
+</ul>
+</li>
+</ul>
+<h2 is-upgraded>応用問題</h2>
+<p>フィールドが <code>copyable:"false"</code> の Struct Tag をもつ場合、代入をスキップしてみましょう。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="その他の学習" duration="0">
+        <p>reflect パッケージを使ったメタプログラミングには、ランタイムの振る舞いを変える以外にも、以下のように使うことができます。 関連のOSSのソースコードなどを読んでみましょう。</p>
+<ul>
+<li>データベースの情報を読み込んで struct にマッピングする（ORM）</li>
+<li>Struct Tag と <code>go generate</code> を使って、コード生成する</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="参考資料" duration="0">
+        <ul>
+<li><a href="https://pkg.go.dev/reflect" target="_blank"><code>reflect</code> パッケージドキュメント</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
