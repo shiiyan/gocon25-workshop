@@ -1,0 +1,634 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Go Suggested Fix ツールの作成 Codelab</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="suggestedfix"
+                  title="Go Suggested Fix ツールの作成 Codelab"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="学習目標" duration="0">
+        <ul>
+<li><a href="https://pkg.go.dev/go/ast" target="_blank">Go AST</a> と <a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector" target="_blank">inspector</a> を使用した効率的な型検査方法を理解する</li>
+<li>段階的なアナライザー開発のアプローチを習得する</li>
+<li>SuggestedFix による自動修正機能の実装方法を学ぶ</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="📋 進め方" duration="0">
+        <ol type="1">
+<li>各ステップの「学習内容」と「ゴール」を読み、追加したい診断や修正提案の振る舞いを整理します</li>
+<li>まず <code>go test ./skeleton/stepX/...</code> を実行し、現状のテストの失敗状況を確認して課題を把握します</li>
+<li><code>skeleton/stepX/analyzer.go</code> を編集し、解析ロジックを少しずつ追加しながら再実行して振る舞いの変化を確かめます</li>
+<li>期待どおりの診断や SuggestedFix が出るまで <code>go test ./skeleton/stepX/...</code> を繰り返し、挙動を検証します</li>
+<li>完成形の考え方を整理するために、対応する <code>solution/stepX/analyzer.go</code> を読み、差分の理由を言語化します</li>
+<li>行き詰まったら「ヒント」や参考資料で理解を補強し、再び skeleton に戻って実装をブラッシュアップします</li>
+</ol>
+<h2 is-upgraded>実装タスク</h2>
+<p><code>skeleton/stepX/analyzer.go</code> をテストが通るように修正してください：</p>
+<pre><code language="language-bash" class="language-bash">cd suggestedfix/skeleton/stepX
+
+# テストを実行
+go test -v -count=1 .
+</code></pre>
+<h2 is-upgraded>前提条件</h2>
+<ul>
+<li>Go 1.25 以降がインストールされていること</li>
+<li>Go プログラミングの基本的な理解</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="環境のセットアップ" duration="0">
+        <h2 is-upgraded>Goインストールの確認</h2>
+<pre><code language="language-bash" class="language-bash">go version
+</code></pre>
+<h2 is-upgraded>作業ディレクトリの構成</h2>
+<p>このワークショップでは、以下の構成で作業します：</p>
+<pre><code>suggestedfix/
+├── skeleton/      # 各ステップのスケルトンコード
+│   ├── step1/
+│   │   ├── analyzer.go       # 実装する解析器
+│   │   ├── analyzer_test.go  # テストコード
+│   │   └── testdata/         # テスト用データ
+│   ├── step2/
+│   └── step3/
+└── solution/      # 各ステップの完成コード
+    ├── step1/
+    ├── step2/
+    └── step3/
+</code></pre>
+<h2 is-upgraded>Goモジュールの初期化</h2>
+<pre><code language="language-bash" class="language-bash">cd suggestedfix
+go mod init suggestedfix
+</code></pre>
+<h2 is-upgraded>必要な依存関係のインストール</h2>
+<pre><code language="language-bash" class="language-bash">go get golang.org/x/tools/go/analysis
+go get golang.org/x/tools/go/analysis/passes/inspect
+go get golang.org/x/tools/go/ast/inspector
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: Inspector を使用したインターフェース型の検出" duration="0">
+        <h2 is-upgraded>ゴール</h2>
+<p>✅ <a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector" target="_blank"><code>inspector</code></a> を使用して AST から <code>interface{}</code> 型リテラルを効率的に見つける</p>
+<h2 is-upgraded>学習内容</h2>
+<p>静的解析ツールを作成する第一歩として、コードから特定の型（今回は interface 型）を検出する方法を学びます。</p>
+<h2 is-upgraded>Inspector の仕組みと利点</h2>
+<h3 is-upgraded>Inspector とは</h3>
+<p><a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector" target="_blank"><code>go/ast/inspector</code></a> パッケージは、AST を効率的に走査するための最適化されたツールです。<a href="https://pkg.go.dev/golang.org/x/tools/go/analysis" target="_blank">analysis</a> パッケージでは、<a href="https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/inspect#Analyzer" target="_blank"><code>inspect.Analyzer</code></a> を通じて提供されます。</p>
+<h3 is-upgraded>内部動作の仕組み</h3>
+<p>Inspector は AST を事前にインデックス化することで高速な走査を実現します：</p>
+<ol type="1">
+<li><strong>事前インデックス化</strong>: AST 全体を一度走査し、ノードタイプごとにインデックスを作成</li>
+<li><strong>型フィルタリング</strong>: 指定された型のノードのみを効率的に訪問</li>
+<li><strong>メモリ共有</strong>: 複数のアナライザー間でインデックスを共有</li>
+</ol>
+<h3 is-upgraded>Preorder と Postorder</h3>
+<pre><code language="language-go" class="language-go">// Preorder: 親ノードを子ノードより先に訪問
+inspect.Preorder(nodeFilter, func(n ast.Node) {
+    // 親→子の順序で処理
+})
+
+// Postorder: 子ノードを親ノードより先に訪問
+inspect.Postorder(nodeFilter, func(n ast.Node) {
+    // 子→親の順序で処理
+})
+</code></pre>
+<h3 is-upgraded>nodeFilter の仕組み</h3>
+<pre><code language="language-go" class="language-go">// 型のゼロ値ポインタを使って、対象とする型を指定
+nodeFilter := []ast.Node{
+    (*ast.InterfaceType)(nil),  // InterfaceType のみ
+    (*ast.FuncDecl)(nil),       // 複数指定も可能
+}
+</code></pre>
+<p>この配列に指定された型のノードのみがコールバック関数に渡されます。</p>
+<h3 is-upgraded>パフォーマンスの違い</h3>
+<p>大規模なコードベース（1000ファイル）での比較：</p>
+<ul>
+<li><strong>ast.Inspect</strong>: 全ノード（約100万個）を訪問 → 約500ms</li>
+<li><strong>inspector.Preorder</strong>: 対象ノード（約1000個）のみ訪問 → 約10ms</li>
+</ul>
+<p>つまり、特定の型のノードのみを処理したい場合、<a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector" target="_blank">Inspector</a> は50倍以上高速です。</p>
+<h2 is-upgraded>AST の基礎知識</h2>
+<h3 is-upgraded>AST とは何か</h3>
+<p>AST（Abstract Syntax Tree）は、ソースコードの構文構造を木構造で表現したものです。コンパイラやツールがコードを理解し操作するための中間表現として使用されます。</p>
+<h3 is-upgraded>Go における AST ノード</h3>
+<p>Go の AST は <a href="https://pkg.go.dev/go/ast" target="_blank"><code>go/ast</code></a> パッケージで定義されており、すべてのノードは <a href="https://pkg.go.dev/go/ast#Node" target="_blank"><code>ast.Node</code></a> インターフェースを実装しています：</p>
+<pre><code language="language-go" class="language-go">type Node interface {
+    Pos() token.Pos // ノードの開始位置
+    End() token.Pos // ノードの終了位置
+}
+</code></pre>
+<p>主要なノードタイプ：</p>
+<ul>
+<li><strong>式（Expression）ノード</strong>: <a href="https://pkg.go.dev/go/ast#Expr" target="_blank"><code>ast.Expr</code></a> を実装<ul>
+<li><a href="https://pkg.go.dev/go/ast#Ident" target="_blank"><code>*ast.Ident</code></a>: 識別子（変数名、型名など）</li>
+<li><a href="https://pkg.go.dev/go/ast#BasicLit" target="_blank"><code>*ast.BasicLit</code></a>: リテラル（数値、文字列など）</li>
+<li><a href="https://pkg.go.dev/go/ast#CallExpr" target="_blank"><code>*ast.CallExpr</code></a>: 関数呼び出し</li>
+<li><a href="https://pkg.go.dev/go/ast#InterfaceType" target="_blank"><code>*ast.InterfaceType</code></a>: インターフェース型</li>
+</ul>
+</li>
+<li><strong>文（Statement）ノード</strong>: <a href="https://pkg.go.dev/go/ast#Stmt" target="_blank"><code>ast.Stmt</code></a> を実装<ul>
+<li><a href="https://pkg.go.dev/go/ast#AssignStmt" target="_blank"><code>*ast.AssignStmt</code></a>: 代入文</li>
+<li><a href="https://pkg.go.dev/go/ast#IfStmt" target="_blank"><code>*ast.IfStmt</code></a>: if 文</li>
+<li><a href="https://pkg.go.dev/go/ast#ForStmt" target="_blank"><code>*ast.ForStmt</code></a>: for 文</li>
+</ul>
+</li>
+<li><strong>宣言（Declaration）ノード</strong>: <a href="https://pkg.go.dev/go/ast#Decl" target="_blank"><code>ast.Decl</code></a> を実装<ul>
+<li><a href="https://pkg.go.dev/go/ast#GenDecl" target="_blank"><code>*ast.GenDecl</code></a>: 汎用宣言（var, const, type, import）</li>
+<li><a href="https://pkg.go.dev/go/ast#FuncDecl" target="_blank"><code>*ast.FuncDecl</code></a>: 関数宣言</li>
+</ul>
+</li>
+</ul>
+<h3 is-upgraded>AST の走査方法</h3>
+<p>AST を走査する主な方法は3つあります：</p>
+<ol type="1">
+<li><a href="https://pkg.go.dev/go/ast#Inspect" target="_blank"><strong>ast.Inspect</strong></a>: 再帰的にすべてのノードを訪問</li>
+</ol>
+<pre><code language="language-go" class="language-go">ast.Inspect(node, func(n ast.Node) bool {
+    // すべてのノードに対して実行
+    return true // false を返すと子ノードをスキップ
+})
+</code></pre>
+<ol type="1" start="2">
+<li><a href="https://pkg.go.dev/go/ast#Walk" target="_blank"><strong>ast.Walk</strong></a>: Visitor パターンを使用</li>
+</ol>
+<pre><code language="language-go" class="language-go">type visitor struct{}
+func (v *visitor) Visit(n ast.Node) ast.Visitor {
+    // ノード処理
+    return v
+}
+ast.Walk(&amp;visitor{}, node)
+</code></pre>
+<ol type="1" start="3">
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector.Preorder" target="_blank"><strong>inspector.Preorder</strong></a><strong>/</strong><a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector.Postorder" target="_blank"><strong>inspector.Postorder</strong></a>: 効率的な型フィルタリング（後述）</li>
+</ol>
+<h3 is-upgraded>InterfaceType ノードの詳細</h3>
+<pre><code language="language-go" class="language-go">// ソースコード例
+var x interface{}           // 空のインターフェース
+type Reader interface {     // メソッドを持つインターフェース
+    Read([]byte) (int, error)
+}
+
+// AST表現
+*ast.GenDecl                // 宣言ノード
+  └── *ast.ValueSpec        // 値の仕様
+      └── Type: *ast.InterfaceType  // インターフェース型
+          └── Methods: *ast.FieldList // メソッドリスト
+              └── List: []*ast.Field   // 各メソッド
+</code></pre>
+<h2 is-upgraded>実装で必要な知識</h2>
+<h3 is-upgraded><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#Pass" target="_blank">analysis.Pass</a> の役割</h3>
+<pre><code language="language-go" class="language-go">type Pass struct {
+    Analyzer   *Analyzer        // 実行中のアナライザー
+    Fset       *token.FileSet   // ファイル位置情報
+    Files      []*ast.File      // 解析対象ファイル
+    ResultOf   map[*Analyzer]interface{} // 依存アナライザーの結果
+    Report     func(Diagnostic) // 診断を報告
+    // ... 他のフィールド
+}
+</code></pre>
+<p><code>pass.ResultOf[inspect.Analyzer]</code> から <a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector" target="_blank">Inspector</a> インスタンスを取得できます。</p>
+<h3 is-upgraded><a href="https://pkg.go.dev/go/token#Pos" target="_blank">token.Pos</a> の概念</h3>
+<p>AST ノードの位置は <a href="https://pkg.go.dev/go/token#Pos" target="_blank">token.Pos</a> で表現されます：</p>
+<ul>
+<li>ファイル内のバイトオフセットを表す整数値</li>
+<li><code>pass.Fset</code> を使って実際のファイル位置に変換可能</li>
+<li><code>Pos()</code> はノードの開始位置、<code>End()</code> は終了位置</li>
+</ul>
+<h3 is-upgraded>必要な修正箇所</h3>
+<ol type="1">
+<li>nodeFilter の設定</li>
+<li>Preorder コールバック内での診断報告</li>
+</ol>
+<h2 is-upgraded>ポイント</h2>
+<ul>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector.Preorder" target="_blank"><code>inspector.Preorder</code></a> で特定の型のノードのみを効率的に走査</li>
+<li>AST ノードの型（<a href="https://pkg.go.dev/go/ast#InterfaceType" target="_blank"><code>*ast.InterfaceType</code></a>）を理解することが重要</li>
+<li><code>pass.Report</code> で検出結果を報告（Diagnostic 構造体を使用）</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: 空のインターフェースの判定" duration="0">
+        <h2 is-upgraded>ゴール</h2>
+<p>✅ 検出したインターフェース型から、<a href="https://go.dev/ref/spec#Interface_types" target="_blank"><code>interface{}</code></a> のみを特定して報告する</p>
+<h2 is-upgraded>学習内容</h2>
+<p>すべてのインターフェース型を検出するだけでなく、メソッドを持たない空のインターフェース（<code>interface{}</code>）のみを特定する方法を学びます。</p>
+<h2 is-upgraded><code>InterfaceType</code> の詳細構造</h2>
+<h3 is-upgraded><code>InterfaceType</code> struct の定義</h3>
+<p><a href="https://pkg.go.dev/go/ast#InterfaceType" target="_blank"><code>InterfaceType</code></a> の構造：</p>
+<pre><code language="language-go" class="language-go">type InterfaceType struct {
+    Interface  token.Pos  // &#34;interface&#34; キーワードの位置
+    Methods    *FieldList // メソッドのリスト
+    Incomplete bool       // 構文エラーがある場合 true
+}
+
+type FieldList struct {
+    Opening token.Pos // 開き括弧 &#39;{&#39; の位置
+    List    []*Field  // フィールド（メソッド）のリスト
+    Closing token.Pos // 閉じ括弧 &#39;}&#39; の位置
+}
+
+type Field struct {
+    Doc     *CommentGroup // ドキュメントコメント
+    Names   []*Ident      // フィールド/メソッド名
+    Type    Expr          // 型表現
+    Tag     *BasicLit     // フィールドタグ（インターフェースでは nil）
+    Comment *CommentGroup // 行コメント
+}
+</code></pre>
+<h3 is-upgraded>様々なインターフェース型の AST 表現</h3>
+<pre><code language="language-go" class="language-go">// 1. 空のインターフェース（Go 1.18以前のスタイル）
+var x interface{}
+// → Methods: nil または Methods.List: []
+
+// 2. any 型（Go 1.18以降）
+var y any
+// → これは *ast.Ident であり、*ast.InterfaceType ではない！
+
+// 3. メソッドを持つインターフェース
+type Writer interface {
+    Write([]byte) (int, error)
+}
+// → Methods.List: []*Field{...} （1つの要素）
+
+// 4. 埋め込みインターフェース
+type ReadWriter interface {
+    io.Reader
+    io.Writer
+}
+// → Methods.List: []*Field{...} （2つの要素、Names は nil）
+
+// 5. 型制約インターフェース（ジェネリクス）
+type Number interface {
+    ~int | ~float64
+}
+// → Methods.List に型要素が含まれる
+</code></pre>
+<h3 is-upgraded>空のインターフェース判定の詳細</h3>
+<p>空のインターフェースかどうかを判定する際の考慮点：</p>
+<ol type="1">
+<li><strong>Methods が nil の場合</strong>: 明示的に <code>interface{}</code> と書かれた</li>
+<li><strong>Methods.List が空配列の場合</strong>: <code>interface { }</code> のようにスペース付きで書かれた</li>
+<li><strong>Methods.List に要素がある場合</strong>: メソッドまたは埋め込み型がある</li>
+</ol>
+<h3 is-upgraded>Field の解釈</h3>
+<p>インターフェースの Field は以下のパターンがあります：</p>
+<pre><code language="language-go" class="language-go">// メソッド定義
+Read([]byte) (int, error)
+// → Names: []*Ident{&#34;Read&#34;}
+// → Type: *ast.FuncType
+
+// 埋め込みインターフェース
+io.Reader
+// → Names: nil
+// → Type: *ast.SelectorExpr または *ast.Ident
+
+// 型要素（ジェネリクス）
+~int
+// → 特殊な型表現
+</code></pre>
+<h2 is-upgraded>実装タスク</h2>
+<p><code>skeleton/step2/analyzer.go</code> を修正：</p>
+<p>Step1では全てのインターフェース型を検出しましたが、Step2では空のインターフェース（<code>interface{}</code>）のみを検出するように修正します。</p>
+<ol type="1">
+<li><strong>空のインターフェースの判定を追加</strong><ul>
+<li>InterfaceType の Methods フィールドをチェック</li>
+<li>空の場合（nil または List が空）のみレポート</li>
+</ul>
+</li>
+<li><strong>適切なメッセージで報告</strong><ul>
+<li>より詳細な診断情報を提供</li>
+</ul>
+</li>
+<li><strong>solution を読み合わせ</strong><ul>
+<li><code>solution/step2/analyzer.go</code> を開き、条件判定の実装方法を確認</li>
+</ul>
+</li>
+</ol>
+<h2 is-upgraded>実装で必要な知識</h2>
+<h3 is-upgraded>型アサーションの安全性</h3>
+<p><a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector" target="_blank">Inspector</a> を使用する場合、nodeFilter で指定した型のノードのみが渡されるため、型アサーションは常に成功します。しかし、防御的プログラミングとして <code>ok</code> パターンを使うことも可能です：</p>
+<pre><code language="language-go" class="language-go">iface, ok := n.(*ast.InterfaceType)
+if !ok {
+    return // これは実際には到達しない
+}
+</code></pre>
+<h3 is-upgraded>nil チェックの重要性</h3>
+<p>Go の AST では、オプショナルな要素は nil になることがあります：</p>
+<ul>
+<li><code>Methods</code> フィールドが nil の場合</li>
+<li><code>Methods.List</code> が nil の場合（通常は空スライス <code>[]</code> ですが）</li>
+</ul>
+<p>両方のケースを考慮した条件分岐が必要です。</p>
+<h3 is-upgraded>診断メッセージの一貫性</h3>
+<p>アナライザー全体で一貫したメッセージを使用するため、定数として定義することが推奨されます：</p>
+<pre><code language="language-go" class="language-go">const message = &#34;interface{} can be replaced with any&#34;
+</code></pre>
+<h2 is-upgraded>なぜ空のインターフェースだけを対象にするのか？</h2>
+<pre><code language="language-go" class="language-go">// 置換対象（空のインターフェース）
+var x interface{}  // → var x any
+
+// 置換対象外（メソッドを持つインターフェース）
+type Writer interface {
+    Write([]byte) (int, error)  // これは置換しない
+}
+</code></pre>
+<h2 is-upgraded>ポイント</h2>
+<ul>
+<li>AST ノードの構造（<code>Methods</code> フィールド）を理解する</li>
+<li>条件分岐により特定のパターンのみを検出</li>
+<li>より具体的な診断メッセージを提供</li>
+</ul>
+<h2 is-upgraded>✅ チェックリスト</h2>
+<ul>
+<li>[ ] Methods フィールドのチェックを実装した</li>
+<li>[ ] 空のインターフェースのみを検出できることを確認した</li>
+<li>[ ] 通常のインターフェースは検出されないことを確認した</li>
+<li>[ ] 診断メッセージが適切に表示されることを確認した</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 3: SuggestedFix による自動修正の追加" duration="0">
+        <h2 is-upgraded>ゴール</h2>
+<p>✅ 診断に自動修正機能を追加し、エディタやツールで簡単に適用できるようにする</p>
+<h2 is-upgraded>学習内容</h2>
+<p>単なる警告だけでなく、具体的な修正方法を提供する <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix" target="_blank">SuggestedFix</a> の実装方法を学びます。これにより、開発者は手動で修正する手間を省けます。</p>
+<h2 is-upgraded>SuggestedFix の詳細な仕組み</h2>
+<h3 is-upgraded>データ構造の階層</h3>
+<pre><code language="language-go" class="language-go">type Diagnostic struct {
+    Pos            token.Pos      // 診断の開始位置
+    End            token.Pos      // 診断の終了位置
+    Category       string         // カテゴリ（オプション）
+    Message        string         // エラーメッセージ
+    SuggestedFixes []SuggestedFix // 修正提案（複数可）
+    Related        []RelatedInfo  // 関連情報
+}
+
+type SuggestedFix struct {
+    Message   string      // 修正の説明（エディタに表示）
+    TextEdits []TextEdit  // 実際の編集内容
+}
+
+type TextEdit struct {
+    Pos     token.Pos  // 編集開始位置
+    End     token.Pos  // 編集終了位置
+    NewText []byte     // 置換後のテキスト
+}
+</code></pre>
+<h3 is-upgraded>TextEdit の動作原理</h3>
+<p><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit" target="_blank">TextEdit</a> は、ソースコードの特定範囲を新しいテキストで置換します：</p>
+<pre><code language="language-go" class="language-go">// 元のコード: &#34;interface{}&#34;
+// Pos: &#39;i&#39; の位置
+// End: &#39;}&#39; の次の位置
+// NewText: []byte(&#34;any&#34;)
+// 結果: &#34;any&#34;
+</code></pre>
+<p>重要な特性：</p>
+<ul>
+<li><strong>位置の精度</strong>: Pos と End は正確にトークンの境界を指定する必要がある</li>
+<li><strong>バイト配列</strong>: NewText は []byte 型（UTF-8 エンコーディング）</li>
+<li><strong>複数編集</strong>: 1つの SuggestedFix に複数の TextEdit を含められる</li>
+</ul>
+<h3 is-upgraded>複数の修正提案</h3>
+<p>1つの診断に複数の修正方法を提案できます：</p>
+<pre><code language="language-go" class="language-go">SuggestedFixes: []analysis.SuggestedFix{
+    {
+        Message: &#34;Replace with any&#34;,
+        TextEdits: []analysis.TextEdit&#123;&#123;
+            Pos: pos, End: end,
+            NewText: []byte(&#34;any&#34;),
+        }},
+    },
+    {
+        Message: &#34;Replace with generic type&#34;,
+        TextEdits: []analysis.TextEdit&#123;&#123;
+            Pos: pos, End: end,
+            NewText: []byte(&#34;T&#34;),
+        }},
+    },
+}
+</code></pre>
+<h3 is-upgraded>位置計算の注意点</h3>
+<pre><code language="language-go" class="language-go">// 正しい位置の取得
+iface := n.(*ast.InterfaceType)
+pos := iface.Pos()  // &#34;interface&#34; キーワードの開始位置
+end := iface.End()  // &#34;}&#34; の次の位置
+
+// 間違った例
+pos := iface.Interface  // これも同じだが、Pos() メソッドを使うべき
+</code></pre>
+<h2 is-upgraded>なぜ SuggestedFix が重要か？</h2>
+<h3 is-upgraded>手動修正 vs 自動修正</h3>
+<p><strong>手動修正の問題点：</strong></p>
+<ul>
+<li>時間がかかる</li>
+<li>タイプミスのリスク</li>
+<li>大規模なコードベースでは現実的でない</li>
+</ul>
+<p><strong>自動修正のメリット：</strong></p>
+<ul>
+<li>一貫性のある修正</li>
+<li>時間の節約</li>
+<li>エラーの削減</li>
+<li>CI/CD パイプラインでの自動適用も可能</li>
+</ul>
+<h2 is-upgraded>実装タスク</h2>
+<p><code>skeleton/step3/analyzer.go</code> を修正：</p>
+<p>Step2では空のインターフェースを検出できるようになりました。Step3では、これに自動修正機能を追加します。</p>
+<ol type="1">
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix" target="_blank"><strong>SuggestedFix</strong></a><strong> を作成</strong><ul>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit" target="_blank">TextEdit</a> で置換内容を定義（<a href="https://go.dev/ref/spec#Interface_types" target="_blank"><code>interface{}</code></a> → <a href="https://pkg.go.dev/builtin#any" target="_blank"><code>any</code></a>）</li>
+<li>適切なメッセージを設定</li>
+</ul>
+</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic" target="_blank"><strong>Diagnostic</strong></a><strong> に追加</strong><ul>
+<li>SuggestedFixes フィールドに設定</li>
+<li>既存の診断メッセージはそのまま</li>
+</ul>
+</li>
+<li><strong>完成版で適用例を確認</strong><ul>
+<li><code>solution/step3/analyzer.go</code> を読解し、SuggestedFix の実装方法を理解</li>
+</ul>
+</li>
+</ol>
+<h2 is-upgraded>実装で必要な知識</h2>
+<h3 is-upgraded><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic" target="_blank">Diagnostic</a> と <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix" target="_blank">SuggestedFix</a> の関係</h3>
+<p>Diagnostic は問題を報告し、SuggestedFix はその解決方法を提供します：</p>
+<pre><code language="language-go" class="language-go">pass.Report(analysis.Diagnostic{
+    Pos:     pos,              // 診断範囲の開始
+    End:     end,              // 診断範囲の終了
+    Message: &#34;問題の説明&#34;,      // ユーザーに表示される診断メッセージ
+    SuggestedFixes: []analysis.SuggestedFix{
+        // 0個以上の修正提案
+    },
+})
+</code></pre>
+<h3 is-upgraded>修正提案の構成要素</h3>
+<ol type="1">
+<li><strong>Message</strong>: エディタの Quick Fix メニューに表示される説明</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit" target="_blank"><strong>TextEdits</strong></a>: 実際に適用される編集操作のリスト</li>
+</ol>
+<h3 is-upgraded>実装時の考慮事項</h3>
+<ul>
+<li>現在の実装では診断のみを報告している</li>
+<li>SuggestedFixes フィールドを追加する必要がある</li>
+<li>Pos と End は既存の診断と同じ値を使用できる</li>
+</ul>
+<h2 is-upgraded>実際の適用例</h2>
+<pre><code language="language-go" class="language-go">// 修正前
+var data interface{}
+func Process(v interface{}) {}
+
+// 自動修正後
+var data any
+func Process(v any) {}
+</code></pre>
+<h2 is-upgraded>analysistest の仕組み</h2>
+<p>テストでは <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis/analysistest" target="_blank"><code>analysistest</code></a> パッケージを使用しており、<code>testdata/src/a/a.go</code> のコメントで期待される診断を指定しています：</p>
+<pre><code language="language-go" class="language-go">func example1(x interface{}) interface{} { // want &#34;interface{} can be replaced with any&#34;
+    return x
+}
+</code></pre>
+<p><code>// want</code> コメントがある行で、指定されたメッセージの診断が報告されることを検証します。</p>
+<p>更に analysistest.RunWithSuggestedFixes を使用することで、SuggestedFixes の適用もテストできます。 golden ファイル（<code>a.go.golden</code>）に修正後のコードを保存し、テストで自動的に比較します。</p>
+<h2 is-upgraded>ポイント</h2>
+<ul>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit" target="_blank">TextEdit</a> で具体的な編集内容を定義</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix" target="_blank">SuggestedFix</a> を <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic" target="_blank">Diagnostic</a> に追加することが重要</li>
+<li>エディタとの連携により開発効率が大幅に向上</li>
+</ul>
+<h2 is-upgraded>✅ チェックリスト</h2>
+<ul>
+<li>[ ] <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix" target="_blank">SuggestedFix</a> の作成を実装した</li>
+<li>[ ] <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit" target="_blank">TextEdit</a> で正しい位置と内容を指定した</li>
+<li>[ ] <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#Diagnostic" target="_blank">Diagnostic</a> に SuggestedFixes を追加した</li>
+<li>[ ] 修正提案が機能することを理解した</li>
+<li>[ ] 実行して動作を確認した</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="0">
+        <p>このコードラボで学んだこと：</p>
+<h2 is-upgraded>📚 Step 1: <a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector" target="_blank">Inspector</a> の活用</h2>
+<ul>
+<li>AST の基本構造と走査方法</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/ast/inspector#Inspector" target="_blank">Inspector</a> による効率的なノード検索</li>
+<li>特定の型のノードのみを対象とした処理</li>
+</ul>
+<h2 is-upgraded>📚 Step 2: 条件による絞り込み</h2>
+<ul>
+<li>AST ノードの詳細な構造の理解</li>
+<li>空のインターフェースの判定ロジック</li>
+<li>より精度の高い診断の実装</li>
+</ul>
+<h2 is-upgraded>📚 Step 3: 自動修正の提供</h2>
+<ul>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#SuggestedFix" target="_blank">SuggestedFix</a> による修正提案の仕組み</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis#TextEdit" target="_blank">TextEdit</a> を使った具体的な編集内容の定義</li>
+<li>開発効率を向上させる自動化ツールの作成</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="実践的な応用" duration="0">
+        <p>学んだ技術は以下のような場面で活用できます：</p>
+<ol type="1">
+<li><strong>コードマイグレーション</strong><ul>
+<li>古いAPIから新しいAPIへの移行</li>
+<li>非推奨機能の置き換え</li>
+</ul>
+</li>
+<li><strong>コード品質の向上</strong><ul>
+<li>コーディング規約の自動適用</li>
+<li>アンチパターンの検出と修正</li>
+</ul>
+</li>
+<li><strong>リファクタリング支援</strong><ul>
+<li>大規模な構造変更の自動化</li>
+<li>一貫性のある変更の適用</li>
+</ul>
+</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="次のステップ" duration="0">
+        <ol type="1">
+<li><strong>理解を深める</strong><ul>
+<li><code>solution/*</code> のコードを詳しく読み、実装の詳細を確認</li>
+<li>なぜ <code>ok</code> パターンで型アサーションをチェックするのか理解する</li>
+</ul>
+</li>
+<li><strong>応用練習</strong><ul>
+<li>他の修正提案（例：error チェック、命名規則）を実装してみる</li>
+<li>複数の SuggestedFix を提供するアナライザーを作成</li>
+</ul>
+</li>
+<li><strong>さらなる学習</strong><ul>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis" target="_blank">golang.org/x/tools/go/analysis</a> のドキュメントを読む</li>
+<li>実際のプロジェクトで独自のアナライザーを作成</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis/singlechecker" target="_blank"><code>singlechecker</code></a> と <a href="https://pkg.go.dev/golang.org/x/tools/go/analysis/multichecker" target="_blank"><code>multichecker</code></a> の違いを理解する</li>
+</ul>
+</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="参考資料" duration="0">
+        <ul>
+<li><a href="https://zenn.dev/hsaki/books/golang-static-analysis" target="_blank">Goで作る静的解析ツール開発入門</a></li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/go/analysis" target="_blank">go/analysis package documentation</a></li>
+<li><a href="https://arslan.io/2019/06/13/using-go-analysis-to-write-a-custom-linter/" target="_blank">Writing a Go Analyzer</a></li>
+<li><a href="https://github.com/dominikh/go-tools" target="_blank">staticcheck source code</a> - 実践的な例として</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

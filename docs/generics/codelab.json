@@ -4,11 +4,11 @@
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
   "updated": "2025-09-22T17:12:22+09:00",
-  "id": "assembly",
+  "id": "generics",
   "duration": 0,
-  "title": "Go アセンブリ Codelab",
-  "summary": "Introduction to Go Assembly",
-  "source": "./assembly/index.md",
+  "title": "Go ジェネリクス Codelab",
+  "summary": "Introduction to Generics",
+  "source": "./generics/index.md",
   "theme": "",
   "status": [
     "published"
@@ -20,5 +20,5 @@
   "tags": [
     "web"
   ],
-  "url": "assembly"
+  "url": "generics"
 }

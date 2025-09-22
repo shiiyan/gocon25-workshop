@@ -3,10 +3,6 @@ package main
 import "fmt"
 
 // TODO: Container型を定義してください
-// ヒント: 
-// - ジェネリクス型パラメータ T を使います
-// - T は fmt.Stringer インターフェースを満たす必要があります
-// - 書き方: Container[T 制約] struct { ... }
 type Container[T any] struct {  // TODO: any を適切な制約に変更
 	items []T
 }
@@ -23,7 +19,7 @@ func (c *Container[T]) PrintAll() {
 	}
 }
 
-// Person型（完成済み）
+// Person型
 type Person struct {
 	Name string
 	Age  int
@@ -33,7 +29,7 @@ func (p Person) String() string {
 	return fmt.Sprintf("%s (%d years)", p.Name, p.Age)
 }
 
-// Product型（完成済み）
+// Product型
 type Product struct {
 	Name  string
 	Price float64
