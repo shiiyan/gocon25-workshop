@@ -1,0 +1,146 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Overlay 入門</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="overlay"
+                  title="Overlay 入門"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="Overlay とは" duration="0">
+        <p>Go のビルドでは、Overlay オプションを使うことで、特定のファイルを別のファイルで置き換えてビルドすることができます。</p>
+<p>このワークショップでは、Overlay の基本的な使い方と、テストでの実践的な利用方法について学びます。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Overlay をつかってみよう" duration="0">
+        <p>まずは、簡単な Go プログラムを用意して、Overlay を使ってみましょう。</p>
+<p>下記のコマンドでこのリポジトリに含まれるプログラムを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">&gt; go run ./overlay/example
+</code></pre>
+<p>このプログラムは、現在時間を <code>time.Now()</code> で取得して、それを表示するだけのシンプルなプログラムです。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import &#34;time&#34;
+
+func main() {
+	n := now()
+
+	println(n.String())
+}
+
+func now() time.Time {
+	return time.Now()
+}
+</code></pre>
+<p>表示される時間は、プログラムを実行した現在の時間となるので、毎回異なる値が表示されます。</p>
+<p>この現在時刻について、「プログラムの実装に変更を入れることなく、実験などのために現在時刻を固定したい」ということを想定してみましょう。</p>
+<p>このような場合に、Go のビルドの Overlay 機能を使うことで標準パッケージの <code>time.Now</code> を置き換えて固定の時刻を返すようにすることができます。</p>
+<p>下記のコマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">&gt; go run -overlay ./overlay/example/overlay.json ./overlay/example
+2025-09-27 00:00:00 +0000 UTC
+</code></pre>
+<p>このコマンドでは先程と同じプログラムを実行していますが、表示される時間が <code>2025-09-27 00:00:00 +0000 UTC</code> に固定されていることがわかります。異なる部分は、<code>-overlay</code> オプションで <code>overlay.json</code> ファイルを指定していることです。</p>
+<p><code>go build</code> や <code>go test</code> では、<code>-overlay</code> というオプションを提供しています。このオプションは、指定した JSON ファイルの内容に基づいて、ビルド時に特定のファイルを別のファイルで置き換えるためのオプションです。</p>
+<p>それでは、<code>-overlay</code> オプションで指定した JSON ファイルの内容を見てみましょう。</p>
+<pre><code language="language-json" class="language-json">&gt; cat ./overlay/example/overlay.json
+{
+  &#34;Replace&#34;:{
+    &#34;${GOROOT}/src/time/time.go&#34;: &#34;./overlay/example/time/time.go&#34;
+  }
+}
+</code></pre>
+<p>※ <code>${GOROOT}</code> は Go のインストールディレクト（<code>go env GOROOT</code> コマンドで取得できる値）に置き換えてください。</p>
+<p>この JSON ファイルは、<code>Replace</code> というキーを持つオブジェクトを定義しています。このオブジェクトの中で、<code>time/time.go</code> という標準パッケージのファイルを、このリポジトリに含まれる <code>./overlay/example/time/time.go</code> という別のファイルで置き換えることを指定しています。</p>
+<p>このリポジトリに含まれる <code>./overlay/example/time/time.go</code> ファイルは、標準パッケージに含まれる <code>time/time.go</code> ファイルをコピーして、下記のように <code>Now</code> 関数を固定の時刻を返すように書き換えたものです。</p>
+<pre><code language="language-go" class="language-go">// ...
+
+func Now() Time {
+	return Date(2025, 9, 27, 0, 0, 0, 0, UTC)
+}
+
+// ...
+</code></pre>
+<p><code>-overlay</code> オプションを使うことで、この書き換えた <code>Now</code> 関数がビルド時に利用されるようになり、プログラムの実行時に <code>time.Now()</code> を呼び出すと固定の時刻が返されるようになります。</p>
+<p>このように、Go のビルドが提供している Overlay 機能を使うことで特定のファイルを別のファイルで置き換えてビルドすることができるので、プログラムの実装に変更を加えることなく動作を変更することができます。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="テストでの Overlay の利用" duration="0">
+        <p>先程の例では、<code>go run</code> コマンドで main 関数からはじまるプログラムの実行に Overlay を利用してソースコードの一部を置き換えました。</p>
+<p>より実践的な利用例として、テストコードで Overlay を利用する方法を見てみましょう。下記のテストコマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">&gt; go test ./overlay/example
+
+--- FAIL: TestNow (0.00s)
+...
+</code></pre>
+<p>このテストは先程見ていた <code>now</code> 関数のためのテストで、下記のように実装されています。</p>
+<pre><code language="language-go" class="language-go">package main
+
+import (
+	&#34;testing&#34;
+	&#34;time&#34;
+)
+
+func TestNow(t *testing.T) {
+	t.Parallel()
+
+	want := time.Date(2025, 9, 27, 0, 0, 0, 0, time.UTC)
+	got := now()
+
+	if !got.Equal(want) {
+		t.Errorf(&#34;now() = %v; want %v&#34;, got, want)
+	}
+}
+</code></pre>
+<p>このテストコードは、<code>now</code> 関数が返す現在時刻が <code>2025-09-27 00:00:00 +0000 UTC</code> であることを期待していますが、通常のビルドでは <code>now</code> 関数は <code>time.Now()</code> を呼び出して現在の時刻を返すため、テストは失敗します。</p>
+<p>このテストを Overlay を使って実行してみましょう。下記のコマンドを実行してみてください。</p>
+<pre><code language="language-text" class="language-text">&gt; go test -overlay ./overlay/example/overlay.json ./overlay/example
+ok      github.com/newmo-oss/gocon25-workshop/overlay/example   0.001s
+</code></pre>
+<p>この <code>go test</code> コマンドでは、先程のステップと同じように <code>-overlay</code> オプションを指定しているため、<code>time.Now()</code> の実装が置き換えられて固定の時刻を返すようになり、テストが成功していることがわかります。</p>
+<p>このように、テストにおいて Overlay を利用することで、実装を変更することなく特定の関数の動作を置き換えてテストを実行することができるようになり、場合によっては通常のビルドでは実行しづらいテストを実行できるようになります。</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="0">
+        <p>このワークショップでは、Go のビルドが提供している Overlay 機能の基本的な使い方と、テストでの実践的な利用方法について学びました。</p>
+<p>日常的な開発において Overlay 機能を多用することはあまりないかもしれませんが、特定の関数の動作を置き換えたい場合などに役立つことがあるので、一つの解決策として覚えておくと良いでしょう。</p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
