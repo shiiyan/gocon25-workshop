@@ -1,3 +1,10 @@
+author: kamata
+summary: Introduction to building a Go Suggested Fix tool
+id: suggestedfix
+categories: codelab,markdown
+environments: Web
+status: Published
+
 # Go Suggested Fix ツールの作成 Codelab
 
 このコードラボでは、`interface{}`を`any`に置き換える修正提案を提供するGo解析ツールを段階的に作成します。実践的な例を通じて、[Go AST](https://pkg.go.dev/go/ast)の仕組みと静的解析ツールの開発方法を学習します。
