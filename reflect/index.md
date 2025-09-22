@@ -133,23 +133,23 @@ package main
 
 import (
 	"fmt"
-	"uuid"
+	"reflect"
 )
 
 type Person struct {
 	Name string
-	DNA string
-	Soul uuid `copyable:"false"`
+	DNA  string
+	Soul string `copyable:"false"`
 }
 
 type Food struct {
-	Name string
-	Kind string
+	Name             string
+	Kind             string
 	secretIngredient string
 }
 
 func main() {
-	p1 := Person{Name: "Alice", DNA: "ALICE_DNA", Soul: uuid.New()}
+	p1 := Person{Name: "Alice", DNA: "ALICE_DNA", Soul: "ALICE_SOUL"}
 	p2 := Person{}
 	f1 := Food{Name: "Icecream", Kind: "Sweet", secretIngredient: "Salt"}
 	f2 := Food{}
