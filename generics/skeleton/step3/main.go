@@ -27,7 +27,6 @@ func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
 }
 
 type Unmershaller[T any] interface {
-	*T
 	json.Unmarshaler
 }
 
@@ -39,4 +38,3 @@ func main() {
 	}
 	fmt.Println(user.Name, user.Age) // Output: Alice 30
 }
-
