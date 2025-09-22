@@ -1,0 +1,5 @@
+{
+  "Replace":{
+    "${GOROOT}/src/time/time.go": "./overlay/example/time/time.go"
+  }
+}
