@@ -158,15 +158,15 @@ type Container[T fmt.Stringer] struct {
 ### なぜ型制約が有用か
 
 ```go
-// Interface を型制約として使うと...
-container := Container[Person]{}
-container.Add(Person{"Alice", 30})  // OK
-container.Add(Product{"Book", 10})  // コンパイルエラー（型が違う）
-
-// 通常の interface 引数
+// 通常の interface を使う場合
 items := []fmt.Stringer{}
 items = append(items, Person{"Alice", 30})  // OK
 items = append(items, Product{"Book", 10})  // OK（混在可能）
+
+// Interface を型制約として使う場合
+container := Container[Person]{}
+container.Add(Person{"Alice", 30})  // OK
+container.Add(Product{"Book", 10})  // コンパイルエラー（型が違う）
 ```
 
 ### 実装タスク
