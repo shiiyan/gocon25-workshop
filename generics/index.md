@@ -1,13 +1,13 @@
 author: kamata
-summary: Introduction to Generics
+summary: Introduction to generics
 id: generics
 categories: codelab,markdown
 environments: Web
 status: Published
 
-# Go ジェネリクス Codelab
+# Go  generics  Codelab
 
-このコードラボでは、Go 1.18で導入されたジェネリクスについて、実践的な例を通じて学習します。
+このコードラボでは、generics について、実践的な例を通じて学習します。
 
 ## 学習目標
 
@@ -15,7 +15,7 @@ status: Published
 - Interface を型制約として活用する方法を学ぶ
 - 複雑な型制約のパターンを習得する
 
-## 📋 進め方
+## 進め方
 
 1. 各ステップの「学習内容」を読み、概念を理解します
 2. `skeleton/stepX/main.go` を編集して実装します
@@ -23,7 +23,7 @@ status: Published
 
 ### 前提条件
 
-- Go 1.18 以降（Go 1.20以降を推奨）
+- Go 1.18 以降（Go 1.25以降を推奨）
 - 基本的な Go の文法の理解
 
 ### 実行して確認
@@ -36,13 +36,13 @@ go run skeleton/stepX/main.go
 
 ---
 
-## Step 1: ジェネリクスの基礎 - 型パラメータによる抽象化
+## Step 1:  generics の基礎 - 型パラメータによる抽象化
 
-### 🎯 このステップで学ぶこと
+### このステップで学ぶこと
 
 **型パラメータ** という新しい概念を理解し、同一のロジックを複数の型で再利用する方法を学びます。
 
-### 📚 なぜジェネリクスが必要か？
+### なぜ generics が必要か
 
 Go 1.18以前は、複数の型に対して同じ処理を書く場合、以下のような選択肢しかありませんでした。
 
@@ -64,7 +64,7 @@ evens := ints.Filter(func(i any) bool {
 // もし間違った型でアクセスしたら実行時エラー
 ```
 
-### 🔑 型パラメータの概念
+### 型パラメータの概念
 
 型パラメータは「型を後から決める」仕組みです。
 
@@ -81,41 +81,30 @@ var strings Slice[string] // T = string
 **重要な概念**
 
 - `T` は型変数（Type Variable）と呼ばれる
-- `any` は型制約（Type Constraint）— この場合「どんな型でもOK」
+- `any` は型制約（Type Constraint）
+    - この場合「どんな型でもOK」
 - 型パラメータは関数にも使える：`func Map[A, B any](...)`
 
-### 💡 型推論（Type Inference）
+### 実装タスク
 
-Go のコンパイラは多くの場合、型パラメータを自動で推論できます。
+このステップの内容を踏まえて、`skeleton/step1/main.go` を generics を用いて修正してください。
 
-```go
-// 明示的に型を指定
-ints := Slice[int]{1, 2, 3}
+### 理解度チェック
 
-// 型推論により省略可能
-ints := Slice{1, 2, 3}  // 要素から int と推論
-```
-
-### 🛠 実装タスク
-
-このステップの内容を踏まえて、`skeleton/step1/main.go` をジェネリクスを用いて修正してください。
-
-### ✅ 理解度チェック
-
-- [ ] 型パラメータが「型のプレースホルダー」であることを理解した
-- [ ] 型アサーションが不要になる理由を説明できる
-- [ ] コンパイル時型チェックの利点を理解した
-- [ ] 複数の型パラメータ（Map関数のA, B）の使い方を理解した
+- 型パラメータが「型のプレースホルダー」であることを理解した
+- 型アサーションが不要になる理由を説明できる
+- コンパイル時型チェックの利点を理解した
+- 複数の型パラメータ（Map関数のA, B）の使い方を理解した
 
 ---
 
 ## Step 2: Interface を型制約として使う
 
-### 🎯 このステップで学ぶこと
+### このステップで学ぶこと
 
-Interface を**型制約**として使用し、型パラメータに「条件」を付ける方法を学びます。
+Interface を型制約として使用し、型パラメータに「条件」を付ける方法を学びます。
 
-### 📚 型制約の必要性
+### 型制約の必要性
 
 Step 1 では `any` を使いましたが、これは「どんな型でもOK」という意味です。しかし、実際のコードでは「特定のメソッドを持つ型」という条件を付けたい場合があります。
 
@@ -127,12 +116,12 @@ type Container[T any] struct {
 
 func (c *Container[T]) PrintAll() {
     for _, item := range c.items {
-        fmt.Println(item.String())  // ❌ コンパイルエラー！
+        fmt.Println(item.String())  // コンパイルエラー！
     }
 }
 ```
 
-### 🔑 Interface による型制約
+### Interface による型制約
 
 Interface を型制約として使うことで、「この条件を満たす型のみ」を指定できます。
 
@@ -143,7 +132,7 @@ type Container[T fmt.Stringer] struct {
 }
 ```
 
-### 💭 通常の Interface 使用との違い
+### 通常の Interface を使う場合との違い
 
 **重要な違い：型の統一性**
 
@@ -153,7 +142,7 @@ func PrintAll(items []fmt.Stringer) {
     // items = []fmt.Stringer{Person{}, Product{}} // 異なる型OK
 }
 
-// ジェネリクスの型制約：同一の型で統一
+//  generics の型制約：同一の型で統一
 type Container[T fmt.Stringer] struct {
     items []T  // すべて同じ具体的な型T
 }
@@ -163,53 +152,53 @@ type Container[T fmt.Stringer] struct {
 **型制約のメリット**
 
 1. **型の一貫性** — コンテナ内の全要素が同じ型
-2. **パフォーマンス** — interface のボックス化が不要な場合がある
+2. **パフォーマンス** — interface のボックス化が不要になる場合もある
 3. **型情報の保持** — 元の型の情報が失われない
 
-### 🤔 なぜ型制約が有用か？
+### なぜ型制約が有用か
 
 ```go
-// Interface を型制約として使うと...
-container := Container[Person]{}
-container.Add(Person{"Alice", 30})  // ✅ OK
-container.Add(Product{"Book", 10})  // ❌ コンパイルエラー（型が違う）
-
-// 通常の interface 引数だと...
+// 通常の interface を使う場合
 items := []fmt.Stringer{}
-items = append(items, Person{"Alice", 30})  // ✅ OK
-items = append(items, Product{"Book", 10})  // ✅ OK（混在可能）
+items = append(items, Person{"Alice", 30})  // OK
+items = append(items, Product{"Book", 10})  // OK（混在可能）
+
+// Interface を型制約として使う場合
+container := Container[Person]{}
+container.Add(Person{"Alice", 30})  // OK
+container.Add(Product{"Book", 10})  // コンパイルエラー（型が違う）
 ```
 
-### 🛠 実装タスク
+### 実装タスク
 
 このステップの内容を踏まえて、`skeleton/step2/main.go` を修正してください。
 
-### ✅ 理解度チェック
+### 理解度チェック
 
-- [ ] 型制約により特定のメソッドの存在を保証できることを理解した
-- [ ] 型制約と通常の interface 引数の違いを説明できる
-- [ ] 型の一貫性がなぜ重要かを理解した
+- 型制約により特定のメソッドの存在を保証できることを理解した
+- 型制約と通常の interface 引数の違いを説明できる
+- 型の一貫性がなぜ重要かを理解した
 
 ---
 
 ## Step 3: 複雑な型制約 - Interface の合成
-### 🎯 このステップで学ぶこと
+### このステップで学ぶこと
 複数の制約を組み合わせた高度な型制約パターンを理解し、ポインタ専用の制約を正しく表現できるようになります。
 
-### 📚 Pointer 制約を正しく書く難しさ
+### Pointer 制約を正しく書く難しさ
 
 JSON のアンマーシャル処理を汎用化したい場合、値そのもの (`T`) を返しつつ `*T` にだけ定義されたメソッドを呼び出さなければなりません。`json.Unmarshal` はポインタを受け取るため、型制約で「`*T` かつ `json.Unmarshaler`」を厳密に指定する必要があります。
 
-### 🔍 解決したい問題
+### 解決したい問題
 
 ```go
 var user User
 json.Unmarshal(data, &user)  // ポインタが必須
 
-user, err := Unmarshal[User](data) // ジェネリクスで値型として受け取りたい
+user, err := Unmarshal[User](data) //  generics で値型として受け取りたい
 ```
 
-### 🔑 複合型制約（Type Set Intersection）
+### 複合型制約（Type Set Intersection）
 
 以下のように複数の型制約を同時に満たす型を指定します。
 
@@ -222,7 +211,7 @@ type Unmershaller[T any] interface {
 
 これは「`*T` **かつ** `json.Unmarshaler` を実装した型」を意味します。
 
-### 💡 2つの型パラメータの連携
+### 2つの型パラメータの連携
 
 ```go
 func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
@@ -235,34 +224,34 @@ func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
 - `T` : 呼び出し側へ返したい値型（例：`User`）
 - `PT`: `*T` と互換性があり、`json.Unmarshaler` を実装した型
 
-### 🚀 型推論の進化
+### 型推論の進化
 
-Go 1.20 以降では `PT` を省略でき、`Unmarshal[User](data)` のようにシンプルに呼び出せます。コンパイラが `Unmershaller[User]` を満たす型として `*User` を推論します。
+Go 1.20 以降では `PT` を省略でき、`Unmarshal[User](data)` という形でシンプルに呼び出せます。コンパイラが `Unmershaller[User]` を満たす型として `*User` を推論します。
 
-### 🚨 現在の skeleton の問題
+### 現在の skeleton の問題
 
-`skeleton/step3/main.go` の `Unmershaller` は `json.Unmarshaler` しか制約として指定していません。そのため、コンパイラは `PT` と `*T` の関係を理解できず、以下のエラーが発生します：
+`skeleton/step3/main.go` の `Unmershaller` は `json.Unmarshaler` しか制約として指定していません。そのため、コンパイラは `PT` と `*T` の関係を理解できず、以下のエラーが発生します。
 
 ```
 cannot convert &v (value of type *T) to type PT
 ```
 
-### 🛠 実装タスク
+### 実装タスク
 
 このステップの内容を踏まえて、`skeleton/step3/main.go` を修正してください。
 
-### ✅ 理解度チェック
+### 理解度チェック
 
-- [ ] 複合型制約（`*T` かつ `json.Unmarshaler`）の意味を説明できる
-- [ ] なぜ 2 つの型パラメータ（`T` と `PT`）が必要か理解している
-- [ ] `PT(&v)` のキャストが必要な理由を説明できる
-- [ ] 値型だけを許すとコンパイル エラーになることを把握している
+- 複合型制約（`*T` かつ `json.Unmarshaler`）の意味を説明できる
+- なぜ 2 つの型パラメータ（`T` と `PT`）が必要か理解している
+- `PT(&v)` のキャストが必要な理由を説明できる
+- 値型だけを許すとコンパイル エラーになることを把握している
 
 ---
 
 ## まとめ
 
-### 🎓 学んだ概念
+### 学んだ概念
 
 **Step 1: 型パラメータの基礎**
 
@@ -282,13 +271,14 @@ cannot convert &v (value of type *T) to type PT
 - 複数の型パラメータを連携させて高度な抽象化が可能
 - 型推論の改善により、使いやすいAPIを提供できる
 
-### 🚀 次のステップ
+### 次のステップ
 
-1. 標準ライブラリのジェネリクス活用例を調べる（`slices`, `maps` パッケージなど）
-2. 自分のプロジェクトでジェネリクスが活用できる箇所を探す
+1. 標準ライブラリの generics 活用例を調べる（[`iter`]( https://pkg.go.dev/iter ) パッケージなど）
+2. 自分のプロジェクトで generics が活用できる箇所を探す
 3. より高度なパターン（型制約の再帰的定義など）を学習する
 
 ## 参考資料
 
 - [YouTube: GopherCon 2024: Advanced Generics Patterns - Axel Wagner](https://www.youtube.com/watch?v=dab3I-HcTVk)
 - [PDF: GopherCon 2024: Advanced Generics Patterns - Axel Wagner](https://github.com/gophercon/2024-talks/tree/main/AxelWagner-AdvancedGenericsPatterns)
+
