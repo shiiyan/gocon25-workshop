@@ -1,11 +1,9 @@
----
 author: kamata
 summary: Introduction to generics
 id: generics
 categories: codelab,markdown
 environments: Web
 status: Published
----
 
 # Go  generics  Codelab
 
