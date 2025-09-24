@@ -42,7 +42,11 @@
         <ol type="1">
 <li>各ステップの「学習内容」と「ゴール」を読みます</li>
 <li>Step 1 では <code>make</code> コマンドで生成されるアセンブリを観察します</li>
-<li>Step 2 では <code>skeleton/step2/asm_amd64.s</code> の TODO を実装します</li>
+<li>Step 2 では <code>skeleton/step2/</code> ディレクトリの該当するアーキテクチャのファイルで TODO を実装します <ul>
+<li>AMD64 (Intel/AMD): <code>asm_amd64.s</code></li>
+<li>ARM64 (Apple Silicon): <code>asm_arm64.s</code></li>
+</ul>
+</li>
 <li>テストで動作を確認：<code>go test</code></li>
 <li>詰まったら <code>solution/</code> の完成版を参照します</li>
 </ol>
@@ -79,6 +83,7 @@
 <li>スタックフレームの構造</li>
 </ul>
 <h2 is-upgraded>基本的な命令</h2>
+<h3 is-upgraded>AMD64 (x86-64) アーキテクチャ</h3>
 <table>
 <tr><td colspan="1" rowspan="1"><p>命令</p>
 </td><td colspan="1" rowspan="1"><p>説明</p>
@@ -101,6 +106,31 @@
 </td><td colspan="1" rowspan="1"><p><code>RET</code></p>
 </td></tr>
 </table>
+<p>レジスタ: AX, BX, CX, DX, SI, DI, BP, SP, R8-R15</p>
+<h3 is-upgraded>ARM64 (Apple Silicon など) アーキテクチャ</h3>
+<table>
+<tr><td colspan="1" rowspan="1"><p>命令</p>
+</td><td colspan="1" rowspan="1"><p>説明</p>
+</td><td colspan="1" rowspan="1"><p>例</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>MOVD</p>
+</td><td colspan="1" rowspan="1"><p>64ビット値の移動</p>
+</td><td colspan="1" rowspan="1"><p><code>MOVD R0, R1</code> (R0 → R1)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>ADD</p>
+</td><td colspan="1" rowspan="1"><p>加算</p>
+</td><td colspan="1" rowspan="1"><p><code>ADD R1, R0, R0</code> (R0 = R0 + R1)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>SUB</p>
+</td><td colspan="1" rowspan="1"><p>減算</p>
+</td><td colspan="1" rowspan="1"><p><code>SUB R1, R0, R0</code> (R0 = R0 - R1)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>RET</p>
+</td><td colspan="1" rowspan="1"><p>関数から戻る</p>
+</td><td colspan="1" rowspan="1"><p><code>RET</code></p>
+</td></tr>
+</table>
+<p>レジスタ: R0-R30, RSP (スタックポインタ)</p>
 <h2 is-upgraded>疑似レジスタ</h2>
 <table>
 <tr><td colspan="1" rowspan="1"><p>レジスタ</p>
@@ -188,7 +218,14 @@ make add
 <li><code>$0-24</code>: スタックサイズ-引数と戻り値のサイズ</li>
 </ul>
 <h2 is-upgraded>実装タスク</h2>
-<p><code>skeleton/step2/asm_amd64.s</code> の TODO を実装してください。</p>
+<p>⚠️ <strong>重要</strong>: あなたの CPU アーキテクチャに合ったファイルを編集してください：</p>
+<ul>
+<li><strong>Intel/AMD CPU</strong>: <code>skeleton/step2/asm_amd64.s</code></li>
+<li><strong>Apple Silicon (M1/M2/M3)</strong>: <code>skeleton/step2/asm_arm64.s</code></li>
+</ul>
+<p>アーキテクチャの確認方法：</p>
+<pre><code language="language-bash" class="language-bash">go env GOARCH  # amd64 または arm64 が表示されます
+</code></pre>
 <h3 is-upgraded>1. Add関数の実装</h3>
 <p>2つの int64 を足し算する関数を実装：</p>
 <pre><code language="language-asm" class="language-asm">// func Add(a, b int64) int64
@@ -196,11 +233,19 @@ TEXT ·Add(SB), NOSPLIT, $0-24
     // TODO: 実装
     RET
 </code></pre>
-<p>ヒント：</p>
+<p>ヒント（AMD64）：</p>
 <ul>
-<li><code>a</code> は <code>a+0(FP)</code> でアクセス</li>
-<li><code>b</code> は <code>b+8(FP)</code> でアクセス（int64 は 8バイト）</li>
-<li>戻り値は <code>ret+16(FP)</code> に書き込む</li>
+<li><code>a</code> は <code>a+0(FP)</code> でアクセス → <code>MOVQ a+0(FP), AX</code></li>
+<li><code>b</code> は <code>b+8(FP)</code> でアクセス → <code>MOVQ b+8(FP), BX</code></li>
+<li>加算は <code>ADDQ BX, AX</code></li>
+<li>戻り値は <code>ret+16(FP)</code> に書き込む → <code>MOVQ AX, ret+16(FP)</code></li>
+</ul>
+<p>ヒント（ARM64）：</p>
+<ul>
+<li><code>a</code> は <code>a+0(FP)</code> でアクセス → <code>MOVD a+0(FP), R0</code></li>
+<li><code>b</code> は <code>b+8(FP)</code> でアクセス → <code>MOVD b+8(FP), R1</code></li>
+<li>加算は <code>ADD R1, R0, R0</code></li>
+<li>戻り値は <code>ret+16(FP)</code> に書き込む → <code>MOVD R0, ret+16(FP)</code></li>
 </ul>
 <h3 is-upgraded>2. Sub関数の実装</h3>
 <p>2つの int64 を引き算する関数を実装：</p>
@@ -211,7 +256,8 @@ TEXT ·Sub(SB), NOSPLIT, $0-24
 </code></pre>
 <p>ヒント：</p>
 <ul>
-<li><code>SUBQ</code> 命令で引き算（AX = AX - BX）</li>
+<li>AMD64: <code>SUBQ</code> 命令で引き算（AX = AX - BX）</li>
+<li>ARM64: <code>SUB</code> 命令で引き算（R0 = R0 - R1）</li>
 </ul>
 <h2 is-upgraded>テストの実行</h2>
 <pre><code language="language-bash" class="language-bash">cd skeleton/step2
@@ -223,24 +269,6 @@ go test -v -run TestSub
 # すべてのテスト
 go test -v
 </code></pre>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="まとめ" duration="0">
-        <p>このコードラボで学んだこと：</p>
-<h2 is-upgraded>📚 Step 1: アセンブリを読む</h2>
-<ul>
-<li>Go コンパイラが生成するアセンブリの構造</li>
-<li>Go アセンブリ記法の基本（MOVQ, ADDQ, RET など）</li>
-<li>疑似レジスタ（FP, SP）の役割</li>
-</ul>
-<h2 is-upgraded>📚 Step 2: アセンブリを書く</h2>
-<ul>
-<li>TEXT ディレクティブによる関数定義</li>
-<li>引数と戻り値へのアクセス方法</li>
-<li>基本的な算術演算（加算・減算）の実装</li>
-</ul>
 
 
       </google-codelab-step>

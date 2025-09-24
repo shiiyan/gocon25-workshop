@@ -19,7 +19,9 @@ status: Published
 
 1. 各ステップの「学習内容」と「ゴール」を読みます
 2. Step 1 では `make` コマンドで生成されるアセンブリを観察します
-3. Step 2 では `skeleton/step2/asm_amd64.s` の TODO を実装します
+3. Step 2 では `skeleton/step2/` ディレクトリの該当するアーキテクチャのファイルで TODO を実装します
+   - AMD64 (Intel/AMD): `asm_amd64.s`
+   - ARM64 (Apple Silicon): `asm_arm64.s`
 4. テストで動作を確認：`go test`
 5. 詰まったら `solution/` の完成版を参照します
 
@@ -57,12 +59,27 @@ Go コンパイラが生成するアセンブリを観察し、以下を理解�
 
 ### 基本的な命令
 
+#### AMD64 (x86-64) アーキテクチャ
+
 | 命令 | 説明 | 例 |
 |------|------|-----|
 | MOVQ | 64ビット値の移動 | `MOVQ AX, BX` (AX → BX) |
 | ADDQ | 64ビット加算 | `ADDQ BX, AX` (AX += BX) |
 | SUBQ | 64ビット減算 | `SUBQ BX, AX` (AX -= BX) |
 | RET | 関数から戻る | `RET` |
+
+レジスタ: AX, BX, CX, DX, SI, DI, BP, SP, R8-R15
+
+#### ARM64 (Apple Silicon など) アーキテクチャ
+
+| 命令 | 説明 | 例 |
+|------|------|-----|
+| MOVD | 64ビット値の移動 | `MOVD R0, R1` (R0 → R1) |
+| ADD | 加算 | `ADD R1, R0, R0` (R0 = R0 + R1) |
+| SUB | 減算 | `SUB R1, R0, R0` (R0 = R0 - R1) |
+| RET | 関数から戻る | `RET` |
+
+レジスタ: R0-R30, RSP (スタックポインタ)
 
 ### 疑似レジスタ
 
@@ -159,7 +176,14 @@ TEXT ·FuncName(SB), NOSPLIT, $0-24
 
 ### 実装タスク
 
-`skeleton/step2/asm_amd64.s` の TODO を実装してください。
+⚠️ **重要**: あなたの CPU アーキテクチャに合ったファイルを編集してください：
+- **Intel/AMD CPU**: `skeleton/step2/asm_amd64.s`
+- **Apple Silicon (M1/M2/M3)**: `skeleton/step2/asm_arm64.s`
+
+アーキテクチャの確認方法：
+```bash
+go env GOARCH  # amd64 または arm64 が表示されます
+```
 
 #### 1. Add関数の実装
 2つの int64 を足し算する関数を実装：
@@ -171,10 +195,17 @@ TEXT ·Add(SB), NOSPLIT, $0-24
     RET
 ```
 
-ヒント：
-- `a` は `a+0(FP)` でアクセス
-- `b` は `b+8(FP)` でアクセス（int64 は 8バイト）
-- 戻り値は `ret+16(FP)` に書き込む
+ヒント（AMD64）：
+- `a` は `a+0(FP)` でアクセス → `MOVQ a+0(FP), AX`
+- `b` は `b+8(FP)` でアクセス → `MOVQ b+8(FP), BX`
+- 加算は `ADDQ BX, AX`
+- 戻り値は `ret+16(FP)` に書き込む → `MOVQ AX, ret+16(FP)`
+
+ヒント（ARM64）：
+- `a` は `a+0(FP)` でアクセス → `MOVD a+0(FP), R0`
+- `b` は `b+8(FP)` でアクセス → `MOVD b+8(FP), R1`
+- 加算は `ADD R1, R0, R0`
+- 戻り値は `ret+16(FP)` に書き込む → `MOVD R0, ret+16(FP)`
 
 #### 2. Sub関数の実装
 2つの int64 を引き算する関数を実装：
@@ -187,7 +218,8 @@ TEXT ·Sub(SB), NOSPLIT, $0-24
 ```
 
 ヒント：
-- `SUBQ` 命令で引き算（AX = AX - BX）
+- AMD64: `SUBQ` 命令で引き算（AX = AX - BX）
+- ARM64: `SUB` 命令で引き算（R0 = R0 - R1）
 
 
 ### テストの実行
@@ -204,20 +236,6 @@ go test -v
 ```
 
 ---
-
-## まとめ
-
-このコードラボで学んだこと：
-
-### 📚 Step 1: アセンブリを読む
-- Go コンパイラが生成するアセンブリの構造
-- Go アセンブリ記法の基本（MOVQ, ADDQ, RET など）
-- 疑似レジスタ（FP, SP）の役割
-
-### 📚 Step 2: アセンブリを書く
-- TEXT ディレクティブによる関数定義
-- 引数と戻り値へのアクセス方法
-- 基本的な算術演算（加算・減算）の実装
 
 ## 実践的な応用
 
