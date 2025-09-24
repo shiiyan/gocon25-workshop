@@ -1,9 +1,11 @@
+---
 author: kamata
 summary: Introduction to generics
 id: generics
 categories: codelab,markdown
 environments: Web
 status: Published
+---
 
 # Go  generics  Codelab
 
@@ -42,7 +44,7 @@ go run skeleton/stepX/main.go
 
 **型パラメータ** という新しい概念を理解し、同一のロジックを複数の型で再利用する方法を学びます。
 
-### なぜ generics が必要か？
+### なぜ generics が必要か
 
 Go 1.18以前は、複数の型に対して同じ処理を書く場合、以下のような選択肢しかありませんでした。
 
@@ -152,10 +154,10 @@ type Container[T fmt.Stringer] struct {
 **型制約のメリット**
 
 1. **型の一貫性** — コンテナ内の全要素が同じ型
-2. **パフォーマンス** — interface のボックス化が不要な場合がある
+2. **パフォーマンス** — interface のボックス化が不要になる場合もある
 3. **型情報の保持** — 元の型の情報が失われない
 
-### なぜ型制約が有用か？
+### なぜ型制約が有用か
 
 ```go
 // Interface を型制約として使うと...
@@ -226,11 +228,11 @@ func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
 
 ### 型推論の進化
 
-Go 1.20 以降では `PT` を省略でき、`Unmarshal[User](data)` のようにシンプルに呼び出せます。コンパイラが `Unmershaller[User]` を満たす型として `*User` を推論します。
+Go 1.20 以降では `PT` を省略でき、`Unmarshal[User](data)` という形でシンプルに呼び出せます。コンパイラが `Unmershaller[User]` を満たす型として `*User` を推論します。
 
 ### 現在の skeleton の問題
 
-`skeleton/step3/main.go` の `Unmershaller` は `json.Unmarshaler` しか制約として指定していません。そのため、コンパイラは `PT` と `*T` の関係を理解できず、以下のエラーが発生します：
+`skeleton/step3/main.go` の `Unmershaller` は `json.Unmarshaler` しか制約として指定していません。そのため、コンパイラは `PT` と `*T` の関係を理解できず、以下のエラーが発生します。
 
 ```
 cannot convert &v (value of type *T) to type PT
