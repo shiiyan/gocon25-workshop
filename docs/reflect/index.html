@@ -146,23 +146,23 @@ func copyPerson(src, dst *Person) {
 
 import (
 	&#34;fmt&#34;
-	&#34;uuid&#34;
+	&#34;reflect&#34;
 )
 
 type Person struct {
 	Name string
-	DNA string
-	Soul uuid `copyable:&#34;false&#34;`
+	DNA  string
+	Soul string `copyable:&#34;false&#34;`
 }
 
 type Food struct {
-	Name string
-	Kind string
+	Name             string
+	Kind             string
 	secretIngredient string
 }
 
 func main() {
-	p1 := Person{Name: &#34;Alice&#34;, DNA: &#34;ALICE_DNA&#34;, Soul: uuid.New()}
+	p1 := Person{Name: &#34;Alice&#34;, DNA: &#34;ALICE_DNA&#34;, Soul: &#34;ALICE_SOUL&#34;}
 	p2 := Person{}
 	f1 := Food{Name: &#34;Icecream&#34;, Kind: &#34;Sweet&#34;, secretIngredient: &#34;Salt&#34;}
 	f2 := Food{}
@@ -180,7 +180,7 @@ func copyStruct() {}
 <h2 is-upgraded>考え方</h2>
 <ul>
 <li>任意の型を引数で受け取れるようにします <ul>
-<li><code>interface{}</code> を使いましょう</li>
+<li><code>any</code> を使いましょう</li>
 </ul>
 </li>
 <li>引数の値情報から、値そのものを取り出します <ul>
