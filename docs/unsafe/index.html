@@ -285,27 +285,19 @@ fmt.Println(*second) // 20
     
       <google-codelab-step label="まとめ" duration="0">
         <h2 is-upgraded>学んだ概念</h2>
-<p><strong>Step 1: </strong></p>
-<p><strong><code>unsafe</code></strong></p>
-<p><strong>パッケージと</strong></p>
-<p><strong><code>unsafe.Pointer</code></strong></p>
-<p><strong>型</strong></p>
+<h3 is-upgraded>Step 1: <code>unsafe</code>パッケージと<code>unsafe.Pointer</code>型</h3>
 <ul>
 <li><code>unsafe.Pointer</code>型は任意の型のポインタと相互変換可能</li>
 <li>非公開フィールドへのアクセスが可能だが、型安全性を失う</li>
 <li>明示的な<code>import</code>宣言により、危険な操作が可視化される設計</li>
 </ul>
-<p><strong>Step 2: 構造体サイズのコンパイル時検証</strong></p>
+<h3 is-upgraded>Step 2: 構造体サイズのコンパイル時検証</h3>
 <ul>
 <li><code>unsafe.Sizeof</code>関数はコンパイル時定数として評価される</li>
 <li>配列の負のサイズを利用したコンパイル時アサーション</li>
 <li>防御的プログラミングによりランタイムエラーを事前に防ぐ</li>
 </ul>
-<p><strong>Step 3: </strong></p>
-<p><strong><code>uintptr</code></strong></p>
-<p><strong>型とポインタ演算、そして</strong></p>
-<p><strong><code>unsafe.Add</code></strong></p>
-<p><strong>関数</strong></p>
+<h3 is-upgraded>Step 3: <code>uintptr</code>型とポインタ演算、そして<code>unsafe.Add</code>関数</h3>
 <ul>
 <li><code>uintptr</code>型に変換するとGCに追跡されなくなる危険性</li>
 <li><code>unsafe.Add</code>関数により安全なポインタ演算が可能</li>
