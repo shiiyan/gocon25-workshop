@@ -1,6 +1,6 @@
 # †開発を加速させる黒魔術講座† | Go Conference 2025 ワークショップ
 
-## [Delve デバッガによる Go プログラムのデバッグ](https://https://newmo-oss.github.io/gocon25-workshop/delve)
+## [Delve デバッガによる Go プログラムのデバッグ](https://newmo-oss.github.io/gocon25-workshop/delve)
 
 ### Delve とは
 
