@@ -314,19 +314,19 @@ fmt.Println(*second) // 20
 
 ### 学んだ概念
 
-**Step 1: `unsafe`パッケージと`unsafe.Pointer`型**
+#### Step 1: `unsafe`パッケージと`unsafe.Pointer`型
 
 - `unsafe.Pointer`型は任意の型のポインタと相互変換可能
 - 非公開フィールドへのアクセスが可能だが、型安全性を失う
 - 明示的な`import`宣言により、危険な操作が可視化される設計
 
-**Step 2: 構造体サイズのコンパイル時検証**
+#### Step 2: 構造体サイズのコンパイル時検証
 
 - `unsafe.Sizeof`関数はコンパイル時定数として評価される
 - 配列の負のサイズを利用したコンパイル時アサーション
 - 防御的プログラミングによりランタイムエラーを事前に防ぐ
 
-**Step 3: `uintptr`型とポインタ演算、そして`unsafe.Add`関数**
+#### Step 3: `uintptr`型とポインタ演算、そして`unsafe.Add`関数
 
 - `uintptr`型に変換するとGCに追跡されなくなる危険性
 - `unsafe.Add`関数により安全なポインタ演算が可能
