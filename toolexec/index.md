@@ -1,9 +1,10 @@
 author: sivchari
-summary: Deep Dive into toolexec 
+summary: Deep Dive into toolexec
 id: toolexec
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # Go toolexec Codelab
 

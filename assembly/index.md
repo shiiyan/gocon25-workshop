@@ -4,6 +4,7 @@ id: assembly
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # Go アセンブリ Codelab
 

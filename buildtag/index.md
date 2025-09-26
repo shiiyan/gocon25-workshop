@@ -4,6 +4,7 @@ id: buildtag
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # ビルドタグを使った時限爆弾
 

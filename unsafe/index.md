@@ -4,6 +4,7 @@ id: unsafe
 categories: codelab,markdown
 environments: Web
 status: Draft
+url: gocon25-workshop
 
 # Go unsafe Codelab
 
