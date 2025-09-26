@@ -31,7 +31,7 @@
       <google-codelab-step label="学習目標" duration="0">
         <ul>
 <li>任意の型のポインタに変換できる</li>
-<li>uintptrを使ったポインタ演算ができる</li>
+<li><code>uintptr</code>型を使ったポインタ演算ができる</li>
 <li><code>unsafe</code>パッケージの危険性を理解する</li>
 </ul>
 
@@ -71,7 +71,7 @@ unsafe.Pointer型" duration="0">
 <li>構造体のフィールドオフセット計算</li>
 <li>サイズやアライメントの取得</li>
 </ul>
-<p>多くの場合使用を避けるべきですが、パフォーマンスが重要なケースや、CGOを用いてC言語との相互運用時に必要となることがあります。</p>
+<p>多くの場合使用を避けるべきですが、パフォーマンスが重要なケースや、<code>cgo</code>を用いてC言語との相互運用時に必要となることがあります。</p>
 <h2 is-upgraded><code>unsafe.Pointer</code>型</h2>
 <p><code>unsafe.Pointer</code>は特殊なポインタ型で、次のように任意のポインタ型を相互変換が可能になります。</p>
 <pre><code language="language-go" class="language-go">// 任意の型のポインタ -&gt; unsafe.Pointer
@@ -82,11 +82,11 @@ p := unsafe.Pointer(&amp;x)
 y := (*float64)(p)
 fmt.Println(*y)
 </code></pre>
-<h2 is-upgraded>明示的なimport宣言が必要な理由</h2>
-<p><code>unsafe</code>パッケージが言語組み込みではなく、明示的なimport宣言を必要とする設計には重要な意味があります。</p>
+<h2 is-upgraded>明示的な<code>import</code>宣言が必要な理由</h2>
+<p><code>unsafe</code>パッケージが言語組み込みではなく、明示的な<code>import</code>宣言を必要とする設計には重要な意味があります。</p>
 <ul>
 <li><strong>意図的な使用の明確化</strong> - 開発者が危険性を理解した上で意図的に使用していることを示し、コードレビューを助ける</li>
-<li><strong>静的解析での検出</strong> - import宣言から<code>unsafe</code>を使用しているコードを機械的に特定できる</li>
+<li><strong>静的解析での検出</strong> - <code>import</code>宣言から<code>unsafe</code>パッケージを使用しているコードを機械的に特定できる</li>
 <li><strong>セキュリティツールでの可視化</strong> - Google Capslock（capability分析ツール）やdeps.dev（依存関係分析サービス）などが<code>unsafe</code>使用を特別に可視化し、セキュリティリスクとして警告</li>
 </ul>
 <p>この設計により、危険な操作が暗黙的に行われることを防ぎ、コードの監査性を高めています。</p>
@@ -95,7 +95,7 @@ fmt.Println(*y)
 <ol type="1">
 <li><strong>型安全性の喪失</strong> - 誤った型変換によるメモリ破壊</li>
 <li><strong>プラットフォーム依存</strong> - メモリレイアウトがアーキテクチャによって異なる場合がある</li>
-<li><strong>Goランタイムとの非互換</strong> - GCやスタック移動により予期しない動作</li>
+<li><strong>Goランタイムとの非互換</strong> - GC（ガベージコレクタ）やスタック移動により予期しない動作</li>
 <li><strong>将来の互換性なし</strong> - Goのバージョンアップで動作しなくなる可能性</li>
 </ol>
 <p><strong>重要な概念</strong></p>
@@ -116,7 +116,7 @@ fmt.Println(*y)
 <ul>
 <li>なぜ<code>unsafe.Pointer</code>を介さずに直接型変換できないのか説明できますか？</li>
 <li>同じ型のフィールドを持つ構造体であっても、フィールドの宣言順序が異なるとメモリレイアウトが変わります。その場合、どのような問題が発生しますか？</li>
-<li><code>unsafe</code>パッケージが言語組み込みではなく、明示的なimport宣言を必要とする設計の利点を2つ以上挙げられますか？</li>
+<li><code>unsafe</code>パッケージが言語組み込みではなく、明示的な<code>import</code>宣言を必要とする設計の利点を2つ以上挙げられますか？</li>
 <li><code>unsafe.Pointer</code>の使用を避けるべき理由を3つ以上挙げられますか？</li>
 </ul>
 
@@ -216,10 +216,12 @@ fmt.Println(a.N()) // 100
 
       </google-codelab-step>
     
-      <google-codelab-step label="Step 3: uintptrとポインタ演算、そしてunsafe.Add" duration="0">
+      <google-codelab-step label="Step 3: 
+uintptr型とポインタ演算、そして
+unsafe.Add関数" duration="0">
         <h2 is-upgraded>学習内容</h2>
 <p>このステップでは、<code>uintptr</code>型を使ったポインタ演算の危険性と、Go 1.17で導入された<code>unsafe.Add</code>関数を使った安全な方法を学びます。ポインタを数値として扱うことのリスクと、<code>go vet</code>による検出について理解します。</p>
-<h2 is-upgraded>uintptr型とは</h2>
+<h2 is-upgraded><code>uintptr</code>型とは</h2>
 <p><code>uintptr</code>型は、ポインタ値を保持できる大きさの符号なし整数型です。</p>
 <pre><code language="language-go" class="language-go">var x int = 42
 p := &amp;x
@@ -235,7 +237,7 @@ arr = nil
 // この間にGCが発生すると、arrが移動する可能性がある
 var _ = (*int)(unsafe.Pointer(base + unsafe.Sizeof(arr[0])))
 </code></pre>
-<h2 is-upgraded>go vetによる検出</h2>
+<h2 is-upgraded><code>go vet</code>コマンドによる検出</h2>
 <p><code>go vet</code>コマンドは、<a href="https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/unsafeptr" target="_blank">unsafeptr</a>解析器を使って、<code>uintptr</code>型から<code>unsafe.Pointer</code>型への変換を検出します。 なお、<code>go vet</code>コマンドが検出しないケースも存在します。</p>
 <pre><code language="language-go" class="language-go">$ go vet main.go
 ./main.go:11:17: possible misuse of unsafe.Pointer
@@ -291,7 +293,7 @@ fmt.Println(*second) // 20
 <ul>
 <li><code>unsafe.Pointer</code>型は任意の型のポインタと相互変換可能</li>
 <li>非公開フィールドへのアクセスが可能だが、型安全性を失う</li>
-<li>明示的なimport宣言により、危険な操作が可視化される設計</li>
+<li>明示的な<code>import</code>宣言により、危険な操作が可視化される設計</li>
 </ul>
 <p><strong>Step 2: 構造体サイズのコンパイル時検証</strong></p>
 <ul>
