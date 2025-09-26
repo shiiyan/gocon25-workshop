@@ -9,6 +9,7 @@ markdown_files=(
     "./toolexec/index.md"
     "./reflect/index.md"
     "./unsafe/index.md"
+    "./buildtag/index.md"
 )
 
 # Loop through each Markdown file and process with claat

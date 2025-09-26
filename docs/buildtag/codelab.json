@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2025-09-27T06:22:15+09:00",
+  "id": "buildtag",
+  "duration": 0,
+  "title": "ビルドタグを使った時限爆弾",
+  "summary": "Introduction to buildtag bomb",
+  "source": "./buildtag/index.md",
+  "theme": "",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "codelab",
+    "markdown"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "buildtag"
+}

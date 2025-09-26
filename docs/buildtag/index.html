@@ -1,0 +1,248 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>ビルドタグを使った時限爆弾</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="buildtag"
+                  title="ビルドタグを使った時限爆弾"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="学習目標" duration="0">
+        <ul>
+<li>ビルドタグについて学ぶ</li>
+<li>ビルドタグを使った攻撃方法について学ぶ</li>
+<li>ビルドタグを使った攻撃への対応方法について学ぶ</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="進め方" duration="0">
+        <ol type="1">
+<li>各ステップの「学習内容」を読み、概念を理解します</li>
+<li><code>skeleton/stepX/*.go</code> のTODOコメントを修正して実装します</li>
+<li>修正したコードを実行します</li>
+<li><code>solution/stepX/*.go</code> と比較して理解を深めます</li>
+</ol>
+<h2 is-upgraded>前提条件</h2>
+<ul>
+<li>基本的な Go の文法の理解</li>
+</ul>
+<h2 is-upgraded>実行して確認</h2>
+<p>各ステップのコードを修正したら、以下のコマンドで動作を確認してください。 <code>GOTOOLCHAIN</code>環境変数で指定している<code>Go</code>のバージョンは各ステップの指示に従ってください。</p>
+<pre><code language="language-bash" class="language-bash">GOTOOLCHAIN=go1.xx.yy go run ./skeleton/stepX
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: ビルドタグと攻撃手法" duration="0">
+        <h2 is-upgraded>このステップで学ぶこと</h2>
+<p>このステップでは、<code>Go</code>のビルドタグ（build constraint）を悪用した時限爆弾攻撃の仕組みを学びます。将来の<code>Go</code>バージョンで実行される悪意のあるコードを仕込む手法と、それが何故危険なのかを理解します。</p>
+<h2 is-upgraded>Build constraint（ビルドタグ）</h2>
+<p>ビルドタグは、特定の条件下でのみファイルをビルドに含めるための仕組みです。</p>
+<pre><code language="language-go" class="language-go">//go:build go1.25
+
+package main
+
+func init() {
+    panic(&#34;This code runs only with Go 1.25 or later&#34;)
+}
+</code></pre>
+<p>主な用途として以下があります。</p>
+<ul>
+<li>プラットフォーム固有のコード（<code>//go:build windows</code>）</li>
+<li>Goバージョン固有のコード（<code>//go:build go1.18</code>）</li>
+<li>開発・本番環境の切り替え（<code>//go:build debug</code>）</li>
+</ul>
+<h2 is-upgraded><code>GOTOOLCHAIN</code>環境変数</h2>
+<p><code>GOTOOLCHAIN</code>環境変数を使用すると、特定のGoバージョンでコードを実行できます。</p>
+<pre><code language="language-bash" class="language-bash">$ GOTOOLCHAIN=go1.24.6 go run .   # Go 1.24.6で実行
+$ GOTOOLCHAIN=go1.25.1 go run .   # Go 1.25.1で実行
+</code></pre>
+<p><code>Go 1.21</code>以降、この機能により必要に応じて新しい<code>Go</code>バージョンが自動的にダウンロードされます。</p>
+<h2 is-upgraded>ビルドタグを使った攻撃手法</h2>
+<p>悪意のある開発者は、将来の<code>Go</code>バージョンでのみ実行される悪質なコードを仕込むことができます。</p>
+<pre><code language="language-go" class="language-go">//go:build go1.25
+
+package main
+
+func init() {
+    // 将来のバージョンでのみ実行される悪意のあるコード
+    panic(&#34;Time bomb activated!&#34;)
+}
+</code></pre>
+<p>この攻撃の特徴は次の通りです。</p>
+<ol type="1">
+<li><strong>遅延実行</strong> - 現在は無害に見えるが、将来の<code>Go</code>バージョンで悪意のあるコードが実行される</li>
+<li><strong>検出困難</strong> - 現在の<code>Go</code>バージョンでは該当ファイルがビルドされないため、テストで発見しにくい</li>
+<li><strong>広範囲影響</strong> - 依存関係を通じて多くのプロジェクトに影響を与える可能性</li>
+</ol>
+<p><strong>重要な概念</strong></p>
+<ul>
+<li>ビルドタグは条件付きコンパイルを可能にする強力な機能</li>
+<li><code>GOTOOLCHAIN</code>環境変数により任意のGoバージョンで実行可能</li>
+<li>将来のバージョンを指定したビルドタグは時限爆弾として悪用される可能性</li>
+<li>依存関係のセキュリティ監査には将来のビルドタグの確認も必要</li>
+</ul>
+<h2 is-upgraded>実装タスク</h2>
+<p>このステップでは、ビルドタグを使った時限爆弾を作成し、その動作を確認します。</p>
+<p><code>skeleton/step1/util.go</code>を修正して、次の要件を満たしてください。</p>
+<ol type="1">
+<li>Go 1.25以上でのみ実行されるビルドタグを追加</li>
+<li>異なるGoバージョンで実行して動作の違いを確認</li>
+</ol>
+<p>実行例：</p>
+<pre><code language="language-bash" class="language-bash"># Go 1.24では正常実行（util.goが読み込まれない）
+GOTOOLCHAIN=go1.24.6 go run ./skeleton/step1
+
+# Go 1.25では panic が発生（util.goが読み込まれる）
+GOTOOLCHAIN=go1.25.1 go run ./skeleton/step1
+</code></pre>
+<h2 is-upgraded>理解度チェック</h2>
+<ul>
+<li>ビルドタグがどのような仕組みで動作するか説明できますか？</li>
+<li>なぜ将来のGoバージョンを指定したビルドタグが危険なのか理解していますか？</li>
+<li>この攻撃手法を防ぐためにはどのような対策が考えられますか？</li>
+<li><code>GOTOOLCHAIN</code>環境変数の役割と使い方を説明できますか？</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: 静的解析とビルドタグ" duration="0">
+        <h2 is-upgraded>このステップで学ぶこと</h2>
+<p>このステップでは、ビルドタグが静的解析ツールに与える影響を学びます。ビルドタグによりファイルが条件付きでビルドされるため、静的解析も非対称になり、潜在的な問題を見逃す可能性があることを理解します。</p>
+<h2 is-upgraded>静的解析が対象とするファイル</h2>
+<p>静的解析ツール（<code>go vet</code>、<a href="https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck" target="_blank">govulncheck</a>、<a href="https://github.com/google/capslock" target="_blank">Google Capslock</a>など）は、現在のビルド環境でコンパイル対象となるファイルのみを解析します。</p>
+<pre><code language="language-bash" class="language-bash"># Go 1.24では util.go は解析対象外
+$ GOTOOLCHAIN=go1.24.6 go vet ./skeleton/step2
+# エラーが検出されない
+
+# Go 1.25では util.go も解析対象
+$ GOTOOLCHAIN=go1.25.1 go vet ./skeleton/step2
+# エラーが検出される
+</code></pre>
+<p>これにより、将来のバージョンでのみ実行される脆弱なコードや問題のあるコードが静的解析で見逃される危険性があります。</p>
+<h2 is-upgraded>ビルドタグの検出とチェック</h2>
+<p>ビルドタグ付きファイルを検出するには、専用のツールが必要です。</p>
+<h3 is-upgraded>gostaticanalysis/buildtagツール</h3>
+<p><a href="https://github.com/gostaticanalysis/buildtag" target="_blank">gostaticanalysis/buildtag</a>は、ビルドタグ付きファイルを検出・解析するツールです。</p>
+<pre><code language="language-bash" class="language-bash">$ go install github.com/gostaticanalysis/buildtag/cmd/buildtag@latest
+$ buildtag ./...
+</code></pre>
+<h3 is-upgraded>go/build/constraintパッケージ</h3>
+<p>Go標準ライブラリの<code>go/build/constraint</code>パッケージを使用してビルドタグを解析できます。</p>
+<pre><code language="language-go" class="language-go">import &#34;go/build/constraint&#34;
+
+// ビルドタグの解析例
+expr, err := constraint.Parse(&#34;//go:build go1.25&#34;)
+if err != nil {
+    log.Fatal(err)
+}
+// expr.Eval(map[string]bool{&#34;go1.25&#34;: true}) // true
+</code></pre>
+<p><strong>重要な概念</strong></p>
+<ul>
+<li>静的解析ツールは現在のビルド環境でのみファイルを検査する</li>
+<li>ビルドタグ付きファイルは条件によって解析対象から除外される</li>
+<li>セキュリティツールも同様の制限を受ける</li>
+<li>包括的なセキュリティ監査にはすべてのビルドタグ組み合わせでの検査が必要</li>
+</ul>
+<h2 is-upgraded>実装タスク</h2>
+<p>このステップでは、ビルドタグが静的解析に与える影響を確認します。</p>
+<p><code>skeleton/step2/util.go</code>を修正して、次の要件を満たしてください。</p>
+<ol type="1">
+<li><code>fmt.Printf</code>のフォーマット文字列を意図的に間違える（<code>%d</code>を<code>%s</code>に変更）</li>
+<li>この変更により<code>go vet</code>の<code>printf</code>アナライザーがエラーを検出するようにする</li>
+</ol>
+<p>実行例：</p>
+<pre><code language="language-bash" class="language-bash"># Go 1.24では util.go が解析されないためエラーなし
+$ GOTOOLCHAIN=go1.24.6 go vet ./skeleton/step2
+
+# Go 1.25では util.go が解析されエラーが検出される
+$ GOTOOLCHAIN=go1.25.1 go vet ./skeleton/step2
+./skeleton/step2/util.go:9:2: Printf format %s has arg 100 of wrong type int
+</code></pre>
+<h2 is-upgraded>理解度チェック</h2>
+<ul>
+<li>なぜ静的解析ツールはビルドタグ付きファイルを見逃すのか説明できますか？</li>
+<li>セキュリティツールが同様の制限を受ける理由を理解していますか？</li>
+<li>ビルドタグ付きファイルを包括的にチェックするにはどうすれば良いですか？</li>
+<li><code>go/build/constraint</code>パッケージの役割を説明できますか？</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="0">
+        <h2 is-upgraded>学んだ概念</h2>
+<h3 is-upgraded>Step 1: ビルドタグと攻撃手法</h3>
+<ul>
+<li>ビルドタグ（build constraint）は条件付きコンパイルを可能にする機能</li>
+<li><code>GOTOOLCHAIN</code>環境変数により任意のGoバージョンでの実行が可能</li>
+<li>将来のGoバージョンを指定したビルドタグによる時限爆弾攻撃の仕組み</li>
+<li>攻撃の特徴：遅延実行、検出困難、広範囲影響</li>
+</ul>
+<h3 is-upgraded>Step 2: 静的解析とビルドタグ</h3>
+<ul>
+<li>静的解析ツールは現在のビルド環境でのみファイルを解析する</li>
+<li>ビルドタグ付きファイルは条件によって解析対象から除外される</li>
+<li><code>go vet</code>コマンドも同様の制限を受ける</li>
+<li>セキュリティツールによる包括的な監査の必要性</li>
+</ul>
+<h2 is-upgraded>次のステップ</h2>
+<ol type="1">
+<li>実際のOSSプロジェクトでビルドタグ付きファイルの存在を確認する</li>
+<li><code>gostaticanalysis/buildtag</code>ツールを使ってビルドタグの検出を試す</li>
+<li>CI/CDパイプラインで複数のGoバージョンでの静的解析を実装する</li>
+<li>依存関係のセキュリティ監査にビルドタグチェックを組み込む</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="参考資料" duration="0">
+        <ul>
+<li><a href="https://pkg.go.dev/go/build#hdr-Build_Constraints" target="_blank">Go Build Constraints</a></li>
+<li><a href="https://pkg.go.dev/go/build/constraint" target="_blank">go/build/constraint package</a></li>
+<li><a href="https://github.com/gostaticanalysis/buildtag" target="_blank">gostaticanalysis/buildtag</a></li>
+<li><a href="https://go.dev/doc/toolchain" target="_blank">GOTOOLCHAIN環境変数</a></li>
+<li><a href="https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck" target="_blank">govulncheck</a></li>
+<li><a href="https://github.com/google/capslock" target="_blank">Google Capslock</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
