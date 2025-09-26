@@ -1,6 +1,6 @@
 # †開発を加速させる黒魔術講座† | Go Conference 2025 ワークショップ
 
-## [Delve デバッガによる Go プログラムのデバッグ](https://ideal-doodle-8j6p1ke.pages.github.io/delve/#0)
+## [Delve デバッガによる Go プログラムのデバッグ](https://newmo-oss.github.io/gocon25-workshop/delve)
 
 ### Delve とは
 
@@ -14,7 +14,7 @@ Delve は Go 言語用のデバッガです。Delve を使うと、Go プログ�
 
 サンプルプログラムを通じて Delve の基本的な使い方を学ぶことで、Go のプログラムのデバッガを用いてデバッグできるようになり、バグを効率的に発見・修正できるようになります！
 
-## [overlay によるソースコードの上書き](https://ideal-doodle-8j6p1ke.pages.github.io/overlay/#0)
+## [overlay によるソースコードの上書き](https://newmo-oss.github.io/gocon25-workshop/overlay)
 
 ### overlay とは
 
@@ -28,7 +28,7 @@ overlay の基本的な使い方を学び、標準パッケージの関数をテ
 
 サンプルプログラムを通じて overlay の基本的な使い方を学ぶことで、Go のビルドでソースコードの一部を上書きできるようになり、テストや実験などで柔軟にコードを差し替えられるようになります！
 
-## [toolexec による Go ツールチェーンのフック](https://ideal-doodle-8j6p1ke.pages.github.io/toolexec/#0)
+## [toolexec による Go ツールチェーンのフック](https://newmo-oss.github.io/gocon25-workshop/toolexec/)
 
 ### toolexec とは
 
@@ -42,7 +42,7 @@ toolexec を使って Go のビルドプロセスを可視化・カスタマイ�
 
 このワークショップを通じて toolexec の基本的な仕組みを理解し、ビルドプロセスの測定・監視や、CI/CD パイプラインでの活用など、実践的な応用ができるようになります！
 
-## [Go Assemblyで低レイヤに触れてみよう](https://ideal-doodle-8j6p1ke.pages.github.io/assembly/#0)
+## [Go Assemblyで低レイヤに触れてみよう](https://newmo-oss.github.io/gocon25-workshop/assembly/)
 
 ### Go Assembly とは
 
@@ -68,7 +68,7 @@ reflect パッケージの基本的なメソッドを利用してメタプログ
 
 このワークショップを通じて reflect パッケージの基本的な使い方を学ぶことで、Go 言語のメタプログラミングの最初の一歩を踏み出すことができるようになります！
 
-## [Go ジェネリクスで型安全なコードを書こう](https://ideal-doodle-8j6p1ke.pages.github.io/generics/)
+## [Go ジェネリクスで型安全なコードを書こう](https://newmo-oss.github.io/gocon25-workshop/generics/)
 
 ### ジェネリクスとは
 
@@ -83,7 +83,7 @@ generics を使ったコードを色々触って、どんな事ができるの�
 
 Generics の基本的な使い方を試すことで、初めて Go の Generics を触る人でもどういう場面で使えそうかイメージできるようになります。
 
-## [Suggested Fix で lint エラーを修正しよう](https://ideal-doodle-8j6p1ke.pages.github.io/suggestedfix/)
+## [Suggested Fix で lint エラーを修正しよう](https://newmo-oss.github.io/gocon25-workshop/suggestedfix/)
 
 ### Suggested Fix とは
 
@@ -97,5 +97,21 @@ Suggested Fix は golang.org/x/tools/go/analysis パッケージが提供する�
 
 このワークショップを通じて静的解析ツールの作り方から、 suggested fix の仕組みまでを理解できるようになります。
 自作の linter が作れるようになり、 golangci-lint などの実装にも思いを巡らせられるようになります。
+
+---
+
+## [`unsafe`パッケージの強力さと危なさを学ぼう](https://newmo-oss.github.io/gocon25-workshop/unsafe/)
+
+### `unsafe`パッケージとは
+
+`unsafe`パッケージは Go の型安全性を回避して低レベルのメモリ操作を可能にする標準パッケージです。`unsafe.Pointer`型を使うと任意の型のポインタを相互変換でき、通常はアクセスできない非公開フィールドへのアクセスや、メモリレイアウトの直接操作が可能になります。
+
+### ワークショップでやること
+
+非公開フィールドへのアクセス、構造体サイズのコンパイル時検証、スライスの内部構造の操作を実践します。`unsafe.Pointer`型、`unsafe.Sizeof`関数、`uintptr`型、`unsafe.Add`関数などの使い方を学びながら、Goランタイムの内部実装を覗いてみましょう！
+
+### できるようになること
+
+このワークショップを通じて`unsafe`パッケージの基本的な使い方と危険性を理解し、パフォーマンスが重要な場面での活用方法を学べます。また、コンパイル時チェックによる防御的プログラミングの手法も身につけられます！
 
 ---

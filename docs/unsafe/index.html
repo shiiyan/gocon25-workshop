@@ -1,0 +1,335 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Go unsafe Codelab</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14" ga4id=""></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  codelab-ga4id=""
+                  id="unsafe"
+                  title="Go unsafe Codelab"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="学習目標" duration="0">
+        <ul>
+<li>任意の型のポインタに変換できる</li>
+<li><code>uintptr</code>型を使ったポインタ演算ができる</li>
+<li><code>unsafe</code>パッケージの危険性を理解する</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="進め方" duration="0">
+        <ol type="1">
+<li>各ステップの「学習内容」を読み、概念を理解します</li>
+<li><code>skeleton/stepX/main.go</code> にあるTODOコメントを修正し実装します</li>
+<li>修正したコードを実行します</li>
+<li><code>solution/stepX/main.go</code> と比較して理解を深めます</li>
+</ol>
+<h2 is-upgraded>前提条件</h2>
+<ul>
+<li>基本的な Go の文法の理解</li>
+<li>ポインタの理解</li>
+</ul>
+<h2 is-upgraded>実行して確認</h2>
+<p>各ステップのコードを修正したら、以下のコマンドで動作を確認してください。</p>
+<pre><code language="language-bash" class="language-bash">go run skeleton/stepX/main.go
+</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 1: 
+unsafeパッケージと
+unsafe.Pointer型" duration="0">
+        <h2 is-upgraded>学習内容</h2>
+<p>このステップでは、<code>unsafe.Pointer</code>を使って通常はアクセスできない非公開フィールドへのアクセス方法を学びます。Goの型安全性を回避し、任意の型のポインタを別の型のポインタに変換する手法を理解します。</p>
+<h2 is-upgraded><code>unsafe</code>パッケージの役割</h2>
+<p><code>unsafe</code>パッケージは、Goの型安全性を回避するための低レベル操作を提供します。主な用途としては次のようなものが挙げられます。</p>
+<ul>
+<li>任意の型のポインタ変換</li>
+<li>メモリレイアウトの直接操作</li>
+<li>構造体のフィールドオフセット計算</li>
+<li>サイズやアライメントの取得</li>
+</ul>
+<p>多くの場合使用を避けるべきですが、パフォーマンスが重要なケースや、<code>cgo</code>を用いてC言語との相互運用時に必要となることがあります。</p>
+<h2 is-upgraded><code>unsafe.Pointer</code>型</h2>
+<p><code>unsafe.Pointer</code>は特殊なポインタ型で、次のように任意のポインタ型を相互変換が可能になります。</p>
+<pre><code language="language-go" class="language-go">// 任意の型のポインタ -&gt; unsafe.Pointer
+var x int64 = 100
+p := unsafe.Pointer(&amp;x)
+
+// unsafe.Pointer -&gt; 任意の型のポインタ
+y := (*float64)(p)
+fmt.Println(*y)
+</code></pre>
+<h2 is-upgraded>明示的な<code>import</code>宣言が必要な理由</h2>
+<p><code>unsafe</code>パッケージが言語組み込みではなく、明示的な<code>import</code>宣言を必要とする設計には重要な意味があります。</p>
+<ul>
+<li><strong>意図的な使用の明確化</strong> - 開発者が危険性を理解した上で意図的に使用していることを示し、コードレビューを助ける</li>
+<li><strong>静的解析での検出</strong> - <code>import</code>宣言から<code>unsafe</code>パッケージを使用しているコードを機械的に特定できる</li>
+<li><strong>セキュリティツールでの可視化</strong> - Google Capslock（capability分析ツール）やdeps.dev（依存関係分析サービス）などが<code>unsafe</code>使用を特別に可視化し、セキュリティリスクとして警告</li>
+</ul>
+<p>この設計により、危険な操作が暗黙的に行われることを防ぎ、コードの監査性を高めています。</p>
+<h2 is-upgraded><code>unsafe</code>パッケージの危険性</h2>
+<p><code>unsafe</code>パッケージを使用する際の主なリスクは次の通りです。</p>
+<ol type="1">
+<li><strong>型安全性の喪失</strong> - 誤った型変換によるメモリ破壊</li>
+<li><strong>プラットフォーム依存</strong> - メモリレイアウトがアーキテクチャによって異なる場合がある</li>
+<li><strong>Goランタイムとの非互換</strong> - GC（ガベージコレクタ）やスタック移動により予期しない動作</li>
+<li><strong>将来の互換性なし</strong> - Goのバージョンアップで動作しなくなる可能性</li>
+</ol>
+<p><strong>重要な概念</strong></p>
+<ul>
+<li><code>unsafe.Pointer</code>は任意の型のポインタと相互変換可能</li>
+<li>型安全性を完全に回避するため、誤用するとプログラムがクラッシュする</li>
+<li>構造体のメモリレイアウトが同じなら、異なる型として解釈可能</li>
+</ul>
+<h2 is-upgraded>実装タスク</h2>
+<p>このステップでは、パッケージ<code>pkgA</code>の非公開フィールドを持つ構造体<code>A</code>に対して、<code>unsafe.Pointer</code>を使ってアクセスします。</p>
+<p><code>skeleton/step1/main.go</code>を修正して、次の要件を満たしてください。</p>
+<ol type="1">
+<li>構造体<code>A</code>の非公開フィールド<code>n</code>と同じメモリレイアウトを持つ構造体<code>B</code>を定義</li>
+<li><code>unsafe.Pointer</code>を使って<code>*A</code>を<code>*B</code>に変換</li>
+<li>構造体<code>B</code>経由で値を設定し、<code>A</code>のメソッド経由で確認</li>
+</ol>
+<h2 is-upgraded>理解度チェック</h2>
+<ul>
+<li>なぜ<code>unsafe.Pointer</code>を介さずに直接型変換できないのか説明できますか？</li>
+<li>同じ型のフィールドを持つ構造体であっても、フィールドの宣言順序が異なるとメモリレイアウトが変わります。その場合、どのような問題が発生しますか？</li>
+<li><code>unsafe</code>パッケージが言語組み込みではなく、明示的な<code>import</code>宣言を必要とする設計の利点を2つ以上挙げられますか？</li>
+<li><code>unsafe.Pointer</code>の使用を避けるべき理由を3つ以上挙げられますか？</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 2: 構造体サイズのコンパイル時検証" duration="0">
+        <h2 is-upgraded>学習内容</h2>
+<p>このステップでは、Step 1で学んだ構造体の型変換に対して、安全性を高める防御的プログラミングの手法を学びます。構造体のサイズが一致することをコンパイル時に検証し、メモリレイアウトの不一致によるバグを防ぐ方法を理解します。</p>
+<h2 is-upgraded>なぜサイズチェックが必要か</h2>
+<p><code>unsafe.Pointer</code>型を使って異なる構造体型に変換する際、両者のメモリレイアウトが同じであることが前提となります。しかし、以下の場合にレイアウトが変わる可能性があります。</p>
+<ul>
+<li>フィールドの型が変更された場合</li>
+<li>フィールドが追加・削除された場合</li>
+<li>パディング（アライメント）が変更された場合</li>
+</ul>
+<h2 is-upgraded><code>unsafe.Sizeof</code>関数とは</h2>
+<p><code>unsafe.Sizeof</code>関数は、引数に渡された値や型のメモリ上のサイズをバイト単位で返します。</p>
+<pre><code language="language-go" class="language-go">var x int32
+fmt.Println(unsafe.Sizeof(x))        // 4
+fmt.Println(unsafe.Sizeof(int64(0))) // 8
+
+type Person struct {
+    Name string // 16バイト（64ビット環境）
+    Age  int    // 8バイト（64ビット環境）
+}
+fmt.Println(unsafe.Sizeof(Person{})) // 24
+</code></pre>
+<p><code>unsafe.Sizeof</code>関数の重要な特性：</p>
+<ol type="1">
+<li><strong>コンパイル時定数</strong> - 結果はコンパイル時に決定され、定数として扱える</li>
+<li><strong>型のサイズを返す</strong> - 実際の値の内容ではなく、型自体のサイズ</li>
+<li><strong>パディングを含む</strong> - 構造体の場合、アライメント用のパディングも含む</li>
+<li><strong>参照型は固定サイズ</strong> - スライスや文字列は内部構造のサイズが返される（要素数に依存しない）</li>
+</ol>
+<pre><code language="language-go" class="language-go">// 基本型のサイズ
+fmt.Println(unsafe.Sizeof(true))      // 1 (bool型)
+fmt.Println(unsafe.Sizeof(uint8(0)))  // 1
+fmt.Println(unsafe.Sizeof(int32(0)))  // 4
+fmt.Println(unsafe.Sizeof(int64(0)))  // 8
+
+// ポインタのサイズ（環境依存）
+var p *int
+fmt.Println(unsafe.Sizeof(p))  // 8（64ビット環境）または4（32ビット環境）
+</code></pre>
+<h2 is-upgraded>コンパイル時サイズチェックの仕組み</h2>
+<p><code>unsafe.Sizeof</code>関数がコンパイル時定数であることを利用して、構造体のサイズの差分を検証します。</p>
+<pre><code language="language-go" class="language-go">type B struct {
+    N int
+}
+
+// 構造体Aと構造体Bのサイズの差分を計算
+const delta = int64(unsafe.Sizeof(B{})) - int64(unsafe.Sizeof(pkgA.A{}))
+
+// deltaが0でなければ、配列サイズが負になりコンパイルエラー
+var _ [-delta * delta]int
+</code></pre>
+<p>この手法のポイントは次の通りです。</p>
+<ol type="1">
+<li>差分が0の場合、<code>-0 * 0 = 0</code>で配列サイズは0（問題なし）</li>
+<li>差分が非0の場合、<code>-delta * delta</code>は必ず負になりコンパイルエラー</li>
+<li>実行時ではなくコンパイル時に問題を検出できる</li>
+</ol>
+<h2 is-upgraded>実際に起きた問題</h2>
+<p><a href="https://go.dev/issue/74462" target="_blank">Go issue #74462</a>では、<code>golang.org/x/tools</code>パッケージがこのサイズチェック手法を使用していたため、Go 1.25で古いバージョンのライブラリがビルドできなくなる問題が発生しました。これは<code>unsafe</code>パッケージを使用するリスクの実例です。</p>
+<h2 is-upgraded>実際のコード例</h2>
+<pre><code language="language-go" class="language-go">var a pkgA.A
+// サイズチェックが成功した場合のみ、この変換が安全
+b := (*B)(unsafe.Pointer(&amp;a))
+b.N = 100
+fmt.Println(a.N()) // 100
+</code></pre>
+<p><strong>重要な概念</strong></p>
+<ul>
+<li>構造体のサイズが一致していても、フィールドの型や順序が異なる場合は危険</li>
+<li>サイズチェックは最低限の安全性を保証する防御策</li>
+<li><code>unsafe.Sizeof</code>関数の結果はコンパイル時に決定される</li>
+<li>配列の負のサイズを利用したコンパイル時アサーション</li>
+</ul>
+<h2 is-upgraded>実装タスク</h2>
+<p>このステップでは、Step 1のコードにサイズチェックを追加して、より安全なコードにします。</p>
+<p><code>skeleton/step2/main.go</code>を修正して、次の要件を満たしてください。</p>
+<ol type="1">
+<li>Step 1と同じく、構造体<code>B</code>型を定義（構造体<code>A</code>型の非公開フィールドと同じレイアウト）</li>
+<li>構造体<code>A</code>型と構造体<code>B</code>型のサイズ差分をチェックするコンパイル時アサーションを追加</li>
+<li>サイズが一致した場合のみ、<code>unsafe.Pointer</code>型による変換を実行</li>
+<li>構造体<code>B</code>型のフィールドを変更して、コンパイルエラーになることを確認</li>
+</ol>
+<h2 is-upgraded>理解度チェック</h2>
+<ul>
+<li>なぜサイズが同じでも構造体の変換が危険な場合があるか説明できますか？</li>
+<li><code>unsafe.Sizeof</code>関数がコンパイル時定数になる理由を理解していますか？</li>
+<li><code>-delta * delta</code>という式を使う理由を説明できますか？</li>
+<li>この手法で防げるバグと防げないバグをそれぞれ挙げられますか？</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Step 3: 
+uintptr型とポインタ演算、そして
+unsafe.Add関数" duration="0">
+        <h2 is-upgraded>学習内容</h2>
+<p>このステップでは、<code>uintptr</code>型を使ったポインタ演算の危険性と、Go 1.17で導入された<code>unsafe.Add</code>関数を使った安全な方法を学びます。ポインタを数値として扱うことのリスクと、<code>go vet</code>による検出について理解します。</p>
+<h2 is-upgraded><code>uintptr</code>型とは</h2>
+<p><code>uintptr</code>型は、ポインタ値を保持できる大きさの符号なし整数型です。</p>
+<pre><code language="language-go" class="language-go">var x int = 42
+p := &amp;x
+addr := uintptr(unsafe.Pointer(p)) // ポインタを数値に変換
+fmt.Printf(&#34;アドレス: 0x%x\n&#34;, addr)
+</code></pre>
+<h2 is-upgraded><code>uintptr</code>型を使ったポインタ演算の危険性</h2>
+<p><code>uintptr</code>型に変換した場合、その値はGC（ガベージコレクタ）に追跡されなくなります。</p>
+<pre><code language="language-go" class="language-go">// 危険なコード
+arr := []int{10, 20, 30}
+base := uintptr(unsafe.Pointer(&amp;arr[0]))
+arr = nil
+// この間にGCが発生すると、arrが移動する可能性がある
+var _ = (*int)(unsafe.Pointer(base + unsafe.Sizeof(arr[0])))
+</code></pre>
+<h2 is-upgraded><code>go vet</code>コマンドによる検出</h2>
+<p><code>go vet</code>コマンドは、<a href="https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/unsafeptr" target="_blank">unsafeptr</a>解析器を使って、<code>uintptr</code>型から<code>unsafe.Pointer</code>型への変換を検出します。 なお、<code>go vet</code>コマンドが検出しないケースも存在します。</p>
+<pre><code language="language-go" class="language-go">$ go vet main.go
+./main.go:11:17: possible misuse of unsafe.Pointer
+</code></pre>
+<h2 is-upgraded><code>unsafe.Add</code>関数</h2>
+<p>Go 1.17で追加された<code>unsafe.Add</code>関数は、より安全にポインタ演算を行えます。</p>
+<pre><code language="language-go" class="language-go">// 推奨される方法
+arr := []int{10, 20, 30}
+base := unsafe.Pointer(&amp;arr[0])
+arr = nil
+second := (*int)(unsafe.Add(base, unsafe.Sizeof(arr[0])))
+fmt.Println(*second) // 20
+</code></pre>
+<h2 is-upgraded><code>unsafe.Add</code>関数の利点</h2>
+<p><code>unsafe.Add</code>関数を使用する際の主な利点は次の通りです。</p>
+<ol type="1">
+<li><strong><code>uintptr</code></strong><strong>型変換の規則を満たす</strong> - <code>unsafe.Pointer</code>型のドキュメントで定められた規則（ポインタ演算時の<code>uintptr</code>型変換は同一式内で行う）を自動的に満たす</li>
+<li><strong>コードの簡潔性</strong> - <code>uintptr</code>型変換の往復が不要で、一つの関数呼び出しでポインタ演算が完結</li>
+<li><strong>意図が明確</strong> - ポインタに対してオフセットを加算する操作であることが関数名から明示的</li>
+</ol>
+<p><strong>重要な概念</strong></p>
+<ul>
+<li><code>uintptr</code>型は単なる整数であり、GCはポインタとして追跡しない</li>
+<li><code>unsafe.Add</code>関数は内部でポインタの妥当性を保持する</li>
+<li>スライスの内部構造は言語仕様では保証されないが、実装を理解することは有益</li>
+</ul>
+<h2 is-upgraded>実装タスク</h2>
+<p>このステップでは、Goのスライスが内部的に「配列へのポインタ」「長さ」「容量」の3つのフィールドを持つ構造体として実装されていることを、<code>unsafe</code>パッケージを使って確認します。</p>
+<p><code>skeleton/step2/main.go</code>を修正して、次の要件を満たしてください。</p>
+<ol type="1">
+<li>スライスの内部構造を表す構造体<code>SliceHeader</code>型を定義</li>
+<li><code>int</code>型のスライスを作成し、<code>unsafe.Pointer</code>型を使って<code>SliceHeader</code>型として解釈</li>
+<li><code>unsafe.Add</code>関数を使って内部配列の各要素に直接アクセス</li>
+<li>通常のスライス操作で得られる値（<code>len</code>関数、<code>cap</code>関数、各要素）と一致することを確認</li>
+</ol>
+<h2 is-upgraded>理解度チェック</h2>
+<ul>
+<li><code>uintptr</code>型に変換するとGCに追跡されなくなる理由を説明できますか？</li>
+<li><code>go vet</code>コマンドが<code>unsafe.Pointer</code>型の誤用を検出する仕組みを理解していますか？</li>
+<li><code>unsafe.Add</code>関数を使うべき場面を2つ以上挙げられますか？</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="まとめ" duration="0">
+        <h2 is-upgraded>学んだ概念</h2>
+<h3 is-upgraded>Step 1: <code>unsafe</code>パッケージと<code>unsafe.Pointer</code>型</h3>
+<ul>
+<li><code>unsafe.Pointer</code>型は任意の型のポインタと相互変換可能</li>
+<li>非公開フィールドへのアクセスが可能だが、型安全性を失う</li>
+<li>明示的な<code>import</code>宣言により、危険な操作が可視化される設計</li>
+</ul>
+<h3 is-upgraded>Step 2: 構造体サイズのコンパイル時検証</h3>
+<ul>
+<li><code>unsafe.Sizeof</code>関数はコンパイル時定数として評価される</li>
+<li>配列の負のサイズを利用したコンパイル時アサーション</li>
+<li>防御的プログラミングによりランタイムエラーを事前に防ぐ</li>
+</ul>
+<h3 is-upgraded>Step 3: <code>uintptr</code>型とポインタ演算、そして<code>unsafe.Add</code>関数</h3>
+<ul>
+<li><code>uintptr</code>型に変換するとGCに追跡されなくなる危険性</li>
+<li><code>unsafe.Add</code>関数により安全なポインタ演算が可能</li>
+<li>スライスの内部構造を理解し、Goランタイムの実装を確認</li>
+</ul>
+<h2 is-upgraded>次のステップ</h2>
+<ol type="1">
+<li>開発しているGoのプロジェクトで<code>unsafe</code>パッケージを使用しているものがないか調べてみる</li>
+<li><code>reflect</code>パッケージと<code>unsafe</code>パッケージの組み合わせを理解する</li>
+<li>実際のプロダクションコードで<code>unsafe</code>パッケージが使われている例を調査する</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="参考資料" duration="0">
+        <ul>
+<li><a href="https://go.dev/ref/spec#Package_unsafe" target="_blank">The Go Programming Language Specification - Package unsafe</a></li>
+<li><a href="https://pkg.go.dev/unsafe" target="_blank">unsafe package documentation</a></li>
+<li><a href="https://go.dev/issue/74462" target="_blank">Go issue #74462 - x/tools unsafe usage</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+  <script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
