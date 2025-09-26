@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2025-09-26T14:19:12+09:00",
+  "id": "unsafe",
+  "duration": 0,
+  "title": "Go unsafe Codelab",
+  "summary": "The magic of unsafe package",
+  "source": "./unsafe/index.md",
+  "theme": "",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "codelab",
+    "markdown"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "unsafe"
+}
