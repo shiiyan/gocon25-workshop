@@ -4,6 +4,7 @@ id: suggestedfix
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # Go Suggested Fix ツールの作成 Codelab
 

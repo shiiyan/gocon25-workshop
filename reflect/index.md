@@ -4,6 +4,7 @@ id: reflect
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # `reflect` パッケージによるメタプログラミング Codelab
 

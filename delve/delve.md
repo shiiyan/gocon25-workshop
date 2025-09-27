@@ -4,6 +4,7 @@ id: delve
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # Delve 入門
 

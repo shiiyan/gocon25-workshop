@@ -4,6 +4,7 @@ id: generics
 categories: codelab,markdown
 environments: Web
 status: Published
+url: gocon25-workshop
 
 # Go  generics  Codelab
 
