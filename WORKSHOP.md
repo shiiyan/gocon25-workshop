@@ -1,6 +1,6 @@
 # †開発を加速させる黒魔術講座† | Go Conference 2025 ワークショップ
 
-## [Delve デバッガによる Go プログラムのデバッグ](https://newmo-oss.github.io/gocon25-workshop/delve)
+## [Delve デバッガによる Go プログラムのデバッグ](https://newmo-oss.github.io/gocon25-workshop/delve?index=gocon25-workshop)
 
 ### Delve とは
 
@@ -14,7 +14,7 @@ Delve は Go 言語用のデバッガです。Delve を使うと、Go プログ�
 
 サンプルプログラムを通じて Delve の基本的な使い方を学ぶことで、Go のプログラムのデバッガを用いてデバッグできるようになり、バグを効率的に発見・修正できるようになります！
 
-## [overlay によるソースコードの上書き](https://newmo-oss.github.io/gocon25-workshop/overlay)
+## [overlay によるソースコードの上書き](https://newmo-oss.github.io/gocon25-workshop/overlay?index=gocon25-workshop)
 
 ### overlay とは
 
@@ -28,7 +28,7 @@ overlay の基本的な使い方を学び、標準パッケージの関数をテ
 
 サンプルプログラムを通じて overlay の基本的な使い方を学ぶことで、Go のビルドでソースコードの一部を上書きできるようになり、テストや実験などで柔軟にコードを差し替えられるようになります！
 
-## [toolexec による Go ツールチェーンのフック](https://newmo-oss.github.io/gocon25-workshop/toolexec/)
+## [toolexec による Go ツールチェーンのフック](https://newmo-oss.github.io/gocon25-workshop/toolexec?index=gocon25-workshop)
 
 ### toolexec とは
 
@@ -42,7 +42,7 @@ toolexec を使って Go のビルドプロセスを可視化・カスタマイ�
 
 このワークショップを通じて toolexec の基本的な仕組みを理解し、ビルドプロセスの測定・監視や、CI/CD パイプラインでの活用など、実践的な応用ができるようになります！
 
-## [Go Assemblyで低レイヤに触れてみよう](https://newmo-oss.github.io/gocon25-workshop/assembly/)
+## [Go Assemblyで低レイヤに触れてみよう](https://newmo-oss.github.io/gocon25-workshop/assembly?index=gocon25-workshop)
 
 ### Go Assembly とは
 
@@ -68,7 +68,7 @@ reflect パッケージの基本的なメソッドを利用してメタプログ
 
 このワークショップを通じて reflect パッケージの基本的な使い方を学ぶことで、Go 言語のメタプログラミングの最初の一歩を踏み出すことができるようになります！
 
-## [Go ジェネリクスで型安全なコードを書こう](https://newmo-oss.github.io/gocon25-workshop/generics/)
+## [Go ジェネリクスで型安全なコードを書こう](https://newmo-oss.github.io/gocon25-workshop/generics?index=gocon25-workshop)
 
 ### ジェネリクスとは
 
@@ -83,7 +83,7 @@ generics を使ったコードを色々触って、どんな事ができるの�
 
 Generics の基本的な使い方を試すことで、初めて Go の Generics を触る人でもどういう場面で使えそうかイメージできるようになります。
 
-## [Suggested Fix で lint エラーを修正しよう](https://newmo-oss.github.io/gocon25-workshop/suggestedfix/)
+## [Suggested Fix で lint エラーを修正しよう](https://newmo-oss.github.io/gocon25-workshop/suggestedfix?index=gocon25-workshop)
 
 ### Suggested Fix とは
 
@@ -100,7 +100,7 @@ Suggested Fix は golang.org/x/tools/go/analysis パッケージが提供する�
 
 ---
 
-## [`unsafe`パッケージの強力さと危なさを学ぼう](https://newmo-oss.github.io/gocon25-workshop/unsafe/)
+## [`unsafe`パッケージの強力さと危なさを学ぼう](https://newmo-oss.github.io/gocon25-workshop/unsafe?index=gocon25-workshop)
 
 ### `unsafe`パッケージとは
 
@@ -114,7 +114,7 @@ Suggested Fix は golang.org/x/tools/go/analysis パッケージが提供する�
 
 このワークショップを通じて`unsafe`パッケージの基本的な使い方と危険性を理解し、パフォーマンスが重要な場面での活用方法を学べます。また、コンパイル時チェックによる防御的プログラミングの手法も身につけられます！
 
-## [ビルドタグによる時限爆弾型の脆弱性について学ぼう](https://newmo-oss.github.io/gocon25-workshop/buildtag/)
+## [ビルドタグによる時限爆弾型の脆弱性について学ぼう](https://newmo-oss.github.io/gocon25-workshop/buildtag?index=gocon25-workshop)
 
 ### ビルドタグとは
 
