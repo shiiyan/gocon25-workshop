@@ -2,8 +2,7 @@ package main
 
 import "fmt"
 
-// TODO: Container型を定義してください
-type Container[T any] struct {  // TODO: any を適切な制約に変更
+type Container[T fmt.Stringer] struct {  // TODO: any を適切な制約に変更
 	items []T
 }
 

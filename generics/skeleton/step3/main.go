@@ -27,6 +27,7 @@ func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
 }
 
 type Unmershaller[T any] interface {
+	*T
 	json.Unmarshaler
 }
 

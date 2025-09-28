@@ -20,13 +20,13 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &aux)
 }
 
-func Unmarshal[T any, PT Unmershaller[T]](data []byte) (T, error) {
+func Unmarshal[T any, PT Unmarshaller[T]](data []byte) (T, error) {
 	var v T
 	err := PT(&v).UnmarshalJSON(data)
 	return v, err
 }
 
-type Unmershaller[T any] interface {
+type Unmarshaller[T any] interface {
 	*T
 	json.Unmarshaler
 }
