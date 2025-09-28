@@ -29,12 +29,26 @@ func run(pass *analysis.Pass) (any, error) {
 		if !ok {
 			return
 		}
+		pos := iface.Pos()
+		end := iface.End()
 
 		if iface.Methods == nil || len(iface.Methods.List) == 0 {
 			pass.Report(analysis.Diagnostic{
-				Pos:     iface.Pos(),
-				End:     iface.End(),
+				Pos:     pos,
+				End:     end,
 				Message: message,
+				SuggestedFixes: []analysis.SuggestedFix{
+					{
+						Message: "Replace with any",
+						TextEdits: []analysis.TextEdit{
+							{
+								Pos:     pos,
+								End:     end,
+								NewText: []byte("any"),
+							},
+						},
+					},
+				},
 			})
 		}
 	})

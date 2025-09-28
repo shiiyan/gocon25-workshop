@@ -1,6 +1,6 @@
 package a
 
-func example1(x interface{}) interface{} { // want "interface found"
+func example1(x interface{}) interface{} { // want "interface{} found" "interface{} found"
 	return x
 }
 

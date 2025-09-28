@@ -18,7 +18,9 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (any, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
-	nodeFilter := []ast.Node{}
+	nodeFilter := []ast.Node{
+		(*ast.InterfaceType)(nil),
+	}
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		pass.Report(analysis.Diagnostic{

@@ -24,11 +24,13 @@ func run(pass *analysis.Pass) (any, error) {
 
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
 		iface := n.(*ast.InterfaceType)
-		pass.Report(analysis.Diagnostic{
-			Pos:     iface.Pos(),
-			End:     iface.End(),
-			Message: "interface{} can be replaced with any",
-		})
+		if iface.Methods == nil || len(iface.Methods.List) == 0 {
+			pass.Report(analysis.Diagnostic{
+				Pos:     iface.Pos(),
+				End:     iface.End(),
+				Message: "interface{} can be replaced with any",
+			})
+		}
 	})
 
 	return nil, nil
